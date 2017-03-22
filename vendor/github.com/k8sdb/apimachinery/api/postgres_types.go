@@ -5,6 +5,12 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 )
 
+const (
+	ResourceKindPostgres = "Postgres"
+	ResourceNamePostgres = "postgres"
+	ResourceTypePostgres = "postgreses"
+)
+
 // Postgres defines a Postgres database.
 type Postgres struct {
 	unversioned.TypeMeta `json:",inline,omitempty"`
@@ -23,8 +29,8 @@ type PostgresSpec struct {
 	// ServiceAccountName is the name of the ServiceAccount to use to run the
 	// Prometheus Pods.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-	// Secret for Authentication
-	AuthSecret *api.SecretVolumeSource `json:"authSecret,omitempty"`
+	// Database authentication secret
+	DatabaseSecret *api.SecretVolumeSource `json:"databaseSecret,omitempty"`
 	// NodeSelector is a selector which must be true for the pod to fit on a node
 	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`

@@ -5,6 +5,12 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 )
 
+const (
+	ResourceKindElastic = "Elastic"
+	ResourceNameElastic = "elastic"
+	ResourceTypeElastic = "elastics"
+)
+
 // Elastic defines a Elasticsearch database.
 type Elastic struct {
 	unversioned.TypeMeta `json:",inline,omitempty"`
@@ -32,7 +38,7 @@ type ElasticSpec struct {
 	// If DoNotDelete is true, controller will prevent to delete this Elastic object.
 	// Controller will create same Elastic object and ignore other process.
 	// +optional
-	DoNotDelete *bool `json:"doNotDelete,omitempty"`
+	DoNotDelete bool `json:"doNotDelete,omitempty"`
 }
 
 type ElasticStatus struct {

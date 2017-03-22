@@ -1,10 +1,14 @@
 package api
 
 import (
-	"time"
-
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
+)
+
+const (
+	ResourceKindDatabaseSnapshot = "DatabaseSnapshot"
+	ResourceNameDatabaseSnapshot = "database-snapshot"
+	ResourceTypeDatabaseSnapshot = "databasesnapshots"
 )
 
 type DatabaseSnapshot struct {
@@ -17,14 +21,26 @@ type DatabaseSnapshot struct {
 type DatabaseSnapshotSpec struct {
 	// Database name
 	DatabaseName string `json:"databaseName,omitempty"`
-	// Backup Spec
-	Backup BackupSpec `json:"backup,omitempty"`
+	// Snapshot Spec
+	SnapshotSpec `json:",inline,omitempty"`
 }
 
+type SnapshoStatus string
+
+const (
+	// used for DatabaseSnapshots that are currently running
+	SnapshotRunning SnapshoStatus = "Running"
+	// used for DatabaseSnapshots that are Succeeded
+	SnapshotSuccessed SnapshoStatus = "Succeeded"
+	// used for PersistentVolumes that are Failed
+	SnapshotFailed SnapshoStatus = "Failed"
+)
+
 type DatabaseSnapshotStatus struct {
-	Message string    `json:"message,omitempty"`
-	Created time.Time `json:"created,omitempty"`
-	Success time.Time `json:"success,omitempty"`
+	StartTime      *unversioned.Time `json:"startTime,omitempty"`
+	CompletionTime *unversioned.Time `json:"completionTime,omitempty"`
+	Status         SnapshoStatus     `json:"status,omitempty"`
+	Reason         string            `json:"reason,omitempty"`
 }
 
 type DatabaseSnapshotList struct {

@@ -7,6 +7,12 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 )
 
+const (
+	ResourceKindDeletedDatabase = "DeletedDatabase"
+	ResourceNameDeletedDatabase = "deleted-database"
+	ResourceTypeDeletedDatabase = "deleteddatabases"
+)
+
 type DeletedDatabase struct {
 	unversioned.TypeMeta `json:",inline,omitempty"`
 	api.ObjectMeta       `json:"metadata,omitempty"`
@@ -22,7 +28,7 @@ type DeletedDatabaseSpec struct {
 	AuthSecret *api.SecretVolumeSource `json:"authSecret,omitempty"`
 	// If true, invoke destroy operation
 	// +optional
-	Destroy *bool `json:"destroy,omitempty"`
+	Destroy bool `json:"destroy,omitempty"`
 }
 
 type DeletedDatabaseStatus struct {
