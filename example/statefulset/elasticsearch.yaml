@@ -1,7 +1,7 @@
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: db-elasticsearch-demo
+  name: k8sdb-elasticsearch-demo
   namespace: default
 spec:
   replicas: 2
@@ -43,19 +43,26 @@ spec:
         elastic.k8sdb.com/name: elasticsearch-demo
     spec:
       containers:
-      - image: appscode/elasticsearch:2.3.1-v2.2
+      - image: appscode/elasticsearch:2.3.1-v2.3
         imagePullPolicy: IfNotPresent
-        name: pg-test
+        name: elasticsearch
+        env:
+        - name: CLUSTER_NAME
+          value: elasticsearch-demo
         ports:
         - containerPort: 9200
-          name: http1
+          name: api
           protocol: TCP
         - containerPort: 9300
-          name: http2
+          name: tcp
           protocol: TCP
         volumeMounts:
         - name: discovery
           mountPath: /tmp/discovery
+        - name: volume
+          mountPath: /var/pv
       volumes:
       - name: discovery
+        emptyDir: {}
+      - name: volume
         emptyDir: {}

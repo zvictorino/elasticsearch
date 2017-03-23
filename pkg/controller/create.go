@@ -107,6 +107,16 @@ func (w *Controller) create(elastic *tapi.Elastic) {
 									MountPath: "/var/pv",
 								},
 							},
+							Env: []kapi.EnvVar{
+								{
+									Name:  "CLUSTER_NAME",
+									Value: elastic.Name,
+								},
+								{
+									Name: "KUBE_NAMESPACE",
+									Value: elastic.Namespace,
+								},
+							},
 						},
 					},
 					InitContainers: []kapi.Container{
