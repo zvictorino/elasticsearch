@@ -7,10 +7,13 @@ echo "Starting Elasticsearch..."
 
 export CLUSTER_NAME=${CLUSTER_NAME}
 export KUBE_NAMESPACE=${KUBE_NAMESPACE:-default}
+export NODE_NAME=${HOSTNAME}.${KUBE_NAMESPACE}
 export NODE_MASTER=${NODE_MASTER:-true}
 export NODE_DATA=${NODE_DATA:-true}
 export HTTP_PORT=${HTTP_PORT:-9200}
 export TRANSPORT_PORT=${TRANSPORT_PORT:-9300}
+
+envsubst < /elasticsearch/config/elasticsearch.yml > /elasticsearch/config/elasticsearch.yml
 
 cat /tmp/discovery/unicast-hosts >> /elasticsearch/config/elasticsearch.yml
 

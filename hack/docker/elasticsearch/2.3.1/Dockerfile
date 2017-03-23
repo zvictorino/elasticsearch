@@ -17,7 +17,7 @@ RUN groupadd -r es --gid=999 && useradd -r -g es --uid=999 es
 ##### Install ElasticSearch ######
 RUN set -x \
   && apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates wget \
+  && apt-get install -y --no-install-recommends ca-certificates wget gettext-base\
   && wget https://download.elasticsearch.org/elasticsearch/elasticsearch/$ES_PKG_NAME.tar.gz \
   && tar xvzf $ES_PKG_NAME.tar.gz \
   && rm -f $ES_PKG_NAME.tar.gz \
