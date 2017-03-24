@@ -41,7 +41,7 @@ RUN chmod +x /etc/service/*/run
 ###########################
 
 ## elasticsearch config file
-COPY lib/elasticsearch.yml /elasticsearch/config/elasticsearch.yml
+COPY lib/elasticsearch.yml /elasticsearch/config/template.yml
 
 VOLUME ["/var/pv"]
 
