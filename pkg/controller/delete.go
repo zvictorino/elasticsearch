@@ -4,13 +4,14 @@ import (
 	"errors"
 	"time"
 
+	amc "github.com/k8sdb/apimachinery/pkg/controller"
 	kapi "k8s.io/kubernetes/pkg/api"
 	k8serr "k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/labels"
 )
 
-func (w *Controller) deleteService(name, namespace string) error {
-	service, err := w.Client.Core().Services(namespace).Get(name)
+func (c *Deleter) deleteService(name, namespace string) error {
+	service, err := c.Client.Core().Services(namespace).Get(name)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			return nil
@@ -22,17 +23,21 @@ func (w *Controller) deleteService(name, namespace string) error {
 		return nil
 	}
 
-	if service.Spec.Selector[LabelDatabaseName] != name {
+	if service.Spec.Selector[amc.LabelDatabaseName] != name {
 		return nil
 	}
 
-	return w.Client.Core().Services(namespace).Delete(name, nil)
+	return c.Client.Core().Services(namespace).Delete(name, nil)
 }
 
-func (c *Controller) deleteStatefulSet(name, namespace string) error {
+func (c *Deleter) deleteStatefulSet(name, namespace string) error {
 	statefulSet, err := c.Client.Apps().StatefulSets(namespace).Get(name)
 	if err != nil {
-		return err
+		if k8serr.IsNotFound(err) {
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	// Update StatefulSet

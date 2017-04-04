@@ -15,8 +15,8 @@ const (
 type Postgres struct {
 	unversioned.TypeMeta `json:",inline,omitempty"`
 	api.ObjectMeta       `json:"metadata,omitempty"`
-	Spec                 PostgresSpec    `json:"spec,omitempty"`
-	Status               *PostgresStatus `json:"status,omitempty"`
+	Spec                 PostgresSpec   `json:"spec,omitempty"`
+	Status               PostgresStatus `json:"status,omitempty"`
 }
 
 type PostgresSpec struct {
@@ -42,14 +42,13 @@ type PostgresSpec struct {
 	// If DoNotDelete is true, controller will prevent to delete this Postgres object.
 	// Controller will create same Postgres object and ignore other process.
 	// +optional
-	DoNotDelete *bool `json:"doNotDelete,omitempty"`
+	DoNotDelete bool `json:"doNotDelete,omitempty"`
 }
 
 type PostgresStatus struct {
-	// Total number of non-terminated pods targeted by this Postgres TPR
-	Replicas int32 `json:"replicas"`
-	// Total number of available pods targeted by this Postgres TPR.
-	AvailableReplicas int32 `json:"availableReplicas"`
+	Created        *unversioned.Time `json:"created,omitempty"`
+	DatabaseStatus `json:",inline,omitempty"`
+	Reason         string `json:"reason,omitempty"`
 }
 
 type PostgresList struct {
