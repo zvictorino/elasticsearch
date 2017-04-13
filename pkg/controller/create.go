@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ghodss/yaml"
 	tapi "github.com/k8sdb/apimachinery/api"
 	amc "github.com/k8sdb/apimachinery/pkg/controller"
 	kapi "k8s.io/kubernetes/pkg/api"
@@ -33,9 +34,6 @@ func (c *elasticController) checkService(name, namespace string) (bool, error) {
 		} else {
 			return false, err
 		}
-	}
-	if service == nil {
-		return false, nil
 	}
 
 	if service.Spec.Selector[amc.LabelDatabaseName] != name {
@@ -87,7 +85,34 @@ func (c *elasticController) createService(name, namespace string) error {
 	return nil
 }
 
+func (c *elasticController) checkStatefulSet(elastic *tapi.Elastic) (*kapps.StatefulSet, error) {
+	// SatatefulSet for Postgres database
+	statefulSetName := fmt.Sprintf("%v-%v", amc.DatabaseNamePrefix, elastic.Name)
+	statefulSet, err := c.Client.Apps().StatefulSets(elastic.Namespace).Get(statefulSetName)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+
+	if statefulSet.Labels[amc.LabelDatabaseType] != DatabaseElasticsearch {
+		return nil, fmt.Errorf(`Intended statefulSet "%v" already exists`, statefulSetName)
+	}
+
+	return statefulSet, nil
+}
+
 func (c *elasticController) createStatefulSet(elastic *tapi.Elastic) (*kapps.StatefulSet, error) {
+	_statefulSet, err := c.checkStatefulSet(elastic)
+	if err != nil {
+		return nil, err
+	}
+	if _statefulSet != nil {
+		return _statefulSet, nil
+	}
+
 	// Set labels
 	if elastic.Labels == nil {
 		elastic.Labels = make(map[string]string)
@@ -255,6 +280,20 @@ func (w *elasticController) createDeletedDatabase(elastic *tapi.Elastic) (*tapi.
 				amc.LabelDatabaseType: DatabaseElasticsearch,
 			},
 		},
+	}
+
+	_elastic := &tapi.Elastic{
+		ObjectMeta: kapi.ObjectMeta{
+			Labels:      elastic.Labels,
+			Annotations: elastic.Annotations,
+		},
+		Spec: elastic.Spec,
+	}
+	yamlDataByte, _ := yaml.Marshal(_elastic)
+	if yamlDataByte != nil {
+		deletedDb.Annotations = map[string]string{
+			DatabaseElasticsearch: string(yamlDataByte),
+		}
 	}
 	return w.ExtClient.DeletedDatabases(deletedDb.Namespace).Create(deletedDb)
 }

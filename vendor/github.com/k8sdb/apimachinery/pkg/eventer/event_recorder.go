@@ -17,6 +17,7 @@ const (
 	EventReasonFailedToDestroy    string = "Failed"
 	EventReasonFailedToGet        string = "Failed"
 	EventReasonFailedToList       string = "Failed"
+	EventReasonFailedToRecover    string = "Failed"
 	EventReasonFailedToSchedule   string = "Failed"
 	EventReasonFailedToStart      string = "Failed"
 	EventReasonFailedToUpdate     string = "Failed"
@@ -46,8 +47,9 @@ func NewEventRecorder(client clientset.Interface, component string) EventRecorde
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartEventWatcher(
 		func(event *kapi.Event) {
-			_, err := client.Core().Events(event.Namespace).Create(event)
-			log.Errorln(err)
+			if _, err := client.Core().Events(event.Namespace).Create(event); err != nil {
+				log.Errorln(err)
+			}
 		},
 	)
 	// Event Recorder
