@@ -279,6 +279,7 @@ func (w *Controller) createDeletedDatabase(elastic *tapi.Elastic) (*tapi.Deleted
 			Namespace: elastic.Namespace,
 			Labels: map[string]string{
 				amc.LabelDatabaseType: tapi.ResourceNameElastic,
+				amc.LabelDatabaseName: elastic.Name,
 			},
 		},
 	}

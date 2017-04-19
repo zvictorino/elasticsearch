@@ -18,7 +18,6 @@ func (c *Controller) create(elastic *tapi.Elastic) {
 	unversionedNow := unversioned.Now()
 	elastic.Status.Created = &unversionedNow
 	elastic.Status.DatabaseStatus = tapi.StatusDatabaseCreating
-
 	var _elastic *tapi.Elastic
 	var err error
 	if _elastic, err = c.ExtClient.Elastics(elastic.Namespace).Update(elastic); err != nil {
@@ -53,7 +52,7 @@ func (c *Controller) create(elastic *tapi.Elastic) {
 	)
 
 	// Check if DeletedDatabase exists or not
-	foundDeleteDb := false
+	recovering := false
 	deletedDb, err := c.ExtClient.DeletedDatabases(elastic.Namespace).Get(elastic.Name)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
@@ -63,17 +62,19 @@ func (c *Controller) create(elastic *tapi.Elastic) {
 			return
 		}
 	} else {
-		/*
-			If exists, check label for database type in label.
-			* If   - DeletedDatabase type is "elasticsearch", continue create process
-			* Else - Do not create Further kubernetes objects.
-			         These may overlaps/conflicts database data
-			Destroy previous database and delete DeletedDatabase object
-			Or use different name for your new Elastic database
-		*/
+		var message string
+
 		if deletedDb.Labels[amc.LabelDatabaseType] != tapi.ResourceNameElastic {
-			message := fmt.Sprintf(`Invalid Elastic: "%v". Exists irrelevent DeletedDatabase: "%v"`,
+			message = fmt.Sprintf(`Invalid Elastic: "%v". Exists irrelevant DeletedDatabase: "%v"`,
 				elastic.Name, deletedDb.Name)
+		} else {
+			if deletedDb.Status.Phase == tapi.PhaseDatabaseRecovering {
+				recovering = true
+			} else {
+				message = fmt.Sprintf(`Recover from DeletedDatabase: "%v"`, deletedDb.Name)
+			}
+		}
+		if !recovering {
 			// Set status to Failed
 			elastic.Status.DatabaseStatus = tapi.StatusDatabaseFailed
 			elastic.Status.Reason = message
@@ -90,7 +91,6 @@ func (c *Controller) create(elastic *tapi.Elastic) {
 			log.Infoln(message)
 			return
 		}
-		foundDeleteDb = true
 	}
 
 	// Event for notification that kubernetes objects are creating
@@ -166,7 +166,7 @@ func (c *Controller) create(elastic *tapi.Elastic) {
 		}
 	}
 
-	if foundDeleteDb {
+	if recovering {
 		// Delete DeletedDatabase instance
 		if err := c.ExtClient.DeletedDatabases(deletedDb.Namespace).Delete(deletedDb.Name); err != nil {
 			message := fmt.Sprintf(`Failed to delete DeletedDatabase: "%v". Reason: %v`, deletedDb.Name, err)
