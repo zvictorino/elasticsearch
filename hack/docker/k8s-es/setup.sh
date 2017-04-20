@@ -61,7 +61,7 @@ build() {
 }
 
 docker_push() {
-    if [ "$cowrypay_ENV" = "prod" ]; then
+    if [ "$APPSCODE_ENV" = "prod" ]; then
         echo "Nothing to do in prod env. Are you trying to 'release' binaries to prod?"
         exit 1
     fi
@@ -69,7 +69,7 @@ docker_push() {
         echo "Are you trying to 'release' binaries to prod?"
         exit 1
     fi
-    hub_canary k8sdb
+    hub_canary
 }
 
 docker_release() {
@@ -81,7 +81,7 @@ docker_release() {
         echo "'apply_tag' to release binaries and/or docker images."
         exit 1
     fi
-    hub_up k8sdb
+    hub_up
 }
 
 source_repo $@
