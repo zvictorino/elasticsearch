@@ -279,7 +279,6 @@ func (w *Controller) createDeletedDatabase(elastic *tapi.Elastic) (*tapi.Deleted
 			Namespace: elastic.Namespace,
 			Labels: map[string]string{
 				amc.LabelDatabaseType: tapi.ResourceNameElastic,
-				amc.LabelDatabaseName: elastic.Name,
 			},
 		},
 	}
@@ -320,7 +319,8 @@ func (w *Controller) reCreateElastic(elastic *tapi.Elastic) error {
 }
 
 const (
-	SnapshotProcess_Restore = "restore"
+	SnapshotProcess_Restore  = "restore"
+	snapshotType_DumpRestore = "dump-restore"
 )
 
 func (w *Controller) createRestoreJob(elastic *tapi.Elastic, dbSnapshot *tapi.DatabaseSnapshot) (*kbatch.Job, error) {
@@ -371,7 +371,7 @@ func (w *Controller) createRestoreJob(elastic *tapi.Elastic, dbSnapshot *tapi.Da
 								},
 								{
 									Name:      persistentVolume.Name,
-									MountPath: "/var/" + snapshotType_DumpBackup + "/",
+									MountPath: "/var/" + snapshotType_DumpRestore + "/",
 								},
 							},
 						},

@@ -1,5 +1,5 @@
 hash: 6818a07dc7554b5630973032bdd1e86102206656a5277c535a8047fc49cd45c8
-updated: 2017-04-17T18:34:44.303979799+06:00
+updated: 2017-04-20T12:11:34.928777223+06:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -152,7 +152,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 77ed1c8a01217656d2080ad51981f6e99adaa177
 - name: github.com/k8sdb/apimachinery
-  version: cc6ec29655d03a977afe5832756c756a5d404a86
+  version: 1bb747468f6843bd87af9e16a51887558ca7c1fe
   subpackages:
   - api
   - api/install
@@ -182,9 +182,9 @@ imports:
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/spf13/cobra
-  version: 5deb57bbca49eb370538fc295ba4b2988f9f5e09
+  version: b655df6ce84126fe9272a3cd4d70555a3a4cfed4
 - name: github.com/spf13/pflag
-  version: e453343e6260b4a3a89f1f0e10a2fbb07f8d9750
+  version: 2300d0f8576fe575f71aaa5b9bbe4e1b0dc2eb51
 - name: github.com/ugorji/go
   version: f1f1a805ed361a0e078bb537e4ea78cd37dcf065
   subpackages:

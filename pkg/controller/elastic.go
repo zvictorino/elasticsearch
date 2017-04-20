@@ -16,7 +16,7 @@ import (
 
 func (c *Controller) create(elastic *tapi.Elastic) {
 	unversionedNow := unversioned.Now()
-	elastic.Status.Created = &unversionedNow
+	elastic.Status.CreateTime = &unversionedNow
 	elastic.Status.DatabaseStatus = tapi.StatusDatabaseCreating
 	var _elastic *tapi.Elastic
 	var err error
