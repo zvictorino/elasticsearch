@@ -12,12 +12,6 @@ source "$REPO_ROOT/hack/libbuild/common/k8sdb_image.sh"
 IMG=elasticsearch
 TAG=2.3.1
 
-DIST=$GOPATH/src/github.com/k8sdb/elasticsearch/dist
-mkdir -p $DIST
-if [ -f "$DIST/.tag" ]; then
-	export $(cat $DIST/.tag | xargs)
-fi
-
 clean() {
     pushd $REPO_ROOT/hack/docker/elasticsearch/2.3.1
     rm -rf lib
