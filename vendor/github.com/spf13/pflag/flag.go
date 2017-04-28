@@ -360,7 +360,7 @@ func (f *FlagSet) MarkDeprecated(name string, usageMessage string) error {
 	if flag == nil {
 		return fmt.Errorf("flag %q does not exist", name)
 	}
-	if usageMessage == "" {
+	if len(usageMessage) == 0 {
 		return fmt.Errorf("deprecated message for flag %q must be set", name)
 	}
 	flag.Deprecated = usageMessage
@@ -375,7 +375,7 @@ func (f *FlagSet) MarkShorthandDeprecated(name string, usageMessage string) erro
 	if flag == nil {
 		return fmt.Errorf("flag %q does not exist", name)
 	}
-	if usageMessage == "" {
+	if len(usageMessage) == 0 {
 		return fmt.Errorf("deprecated message for flag %q must be set", name)
 	}
 	flag.ShorthandDeprecated = usageMessage
@@ -406,28 +406,18 @@ func (f *FlagSet) Set(name, value string) error {
 	if !ok {
 		return fmt.Errorf("no such flag -%v", name)
 	}
-
 	err := flag.Value.Set(value)
 	if err != nil {
-		var flagName string
-		if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
-			flagName = fmt.Sprintf("-%s, --%s", flag.Shorthand, flag.Name)
-		} else {
-			flagName = fmt.Sprintf("--%s", flag.Name)
-		}
-		return fmt.Errorf("invalid argument %q for %q flag: %v", value, flagName, err)
+		return err
 	}
-
 	if f.actual == nil {
 		f.actual = make(map[NormalizedName]*Flag)
 	}
 	f.actual[normalName] = flag
 	f.orderedActual = append(f.orderedActual, flag)
-
 	flag.Changed = true
-
-	if flag.Deprecated != "" {
-		fmt.Fprintf(f.out(), "Flag --%s has been deprecated, %s\n", flag.Name, flag.Deprecated)
+	if len(flag.Deprecated) > 0 {
+		fmt.Fprintf(os.Stderr, "Flag --%s has been deprecated, %s\n", flag.Name, flag.Deprecated)
 	}
 	return nil
 }
@@ -609,28 +599,28 @@ func wrap(i, w int, s string) string {
 // for all flags in the FlagSet. Wrapped to `cols` columns (0 for no
 // wrapping)
 func (f *FlagSet) FlagUsagesWrapped(cols int) string {
-	buf := new(bytes.Buffer)
+	x := new(bytes.Buffer)
 
 	lines := make([]string, 0, len(f.formal))
 
 	maxlen := 0
 	f.VisitAll(func(flag *Flag) {
-		if flag.Deprecated != "" || flag.Hidden {
+		if len(flag.Deprecated) > 0 || flag.Hidden {
 			return
 		}
 
 		line := ""
-		if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
+		if len(flag.Shorthand) > 0 && len(flag.ShorthandDeprecated) == 0 {
 			line = fmt.Sprintf("  -%s, --%s", flag.Shorthand, flag.Name)
 		} else {
 			line = fmt.Sprintf("      --%s", flag.Name)
 		}
 
 		varname, usage := UnquoteUsage(flag)
-		if varname != "" {
+		if len(varname) > 0 {
 			line += " " + varname
 		}
-		if flag.NoOptDefVal != "" {
+		if len(flag.NoOptDefVal) > 0 {
 			switch flag.Value.Type() {
 			case "string":
 				line += fmt.Sprintf("[=\"%s\"]", flag.NoOptDefVal)
@@ -666,10 +656,10 @@ func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 		sidx := strings.Index(line, "\x00")
 		spacing := strings.Repeat(" ", maxlen-sidx)
 		// maxlen + 2 comes from + 1 for the \x00 and + 1 for the (deliberate) off-by-one in maxlen-sidx
-		fmt.Fprintln(buf, line[:sidx], spacing, wrap(maxlen+2, cols, line[sidx+1:]))
+		fmt.Fprintln(x, line[:sidx], spacing, wrap(maxlen+2, cols, line[sidx+1:]))
 	}
 
-	return buf.String()
+	return x.String()
 }
 
 // FlagUsages returns a string containing the usage information for all flags in
@@ -769,8 +759,8 @@ func (f *FlagSet) AddFlag(flag *Flag) {
 	// Call normalizeFlagName function only once
 	normalizedFlagName := f.normalizeFlagName(flag.Name)
 
-	_, alreadyThere := f.formal[normalizedFlagName]
-	if alreadyThere {
+	_, alreadythere := f.formal[normalizedFlagName]
+	if alreadythere {
 		msg := fmt.Sprintf("%s flag redefined: %s", f.name, flag.Name)
 		fmt.Fprintln(f.out(), msg)
 		panic(msg) // Happens only if flags are declared with identical names
@@ -783,7 +773,7 @@ func (f *FlagSet) AddFlag(flag *Flag) {
 	f.formal[normalizedFlagName] = flag
 	f.orderedFormal = append(f.orderedFormal, flag)
 
-	if flag.Shorthand == "" {
+	if len(flag.Shorthand) == 0 {
 		return
 	}
 	if len(flag.Shorthand) > 1 {
@@ -794,10 +784,10 @@ func (f *FlagSet) AddFlag(flag *Flag) {
 		f.shorthands = make(map[byte]*Flag)
 	}
 	c := flag.Shorthand[0]
-	old, alreadyThere := f.shorthands[c]
-	if alreadyThere {
+	old, alreadythere := f.shorthands[c]
+	if alreadythere {
 		fmt.Fprintf(f.out(), "%s shorthand reused: %q for %s already used for %s\n", f.name, c, flag.Name, old.Name)
-		panic(fmt.Sprintf("unable to redefine %q shorthand", c))
+		panic("shorthand redefinition")
 	}
 	f.shorthands[c] = flag
 }
@@ -851,6 +841,35 @@ func (f *FlagSet) usage() {
 	}
 }
 
+func (f *FlagSet) setFlag(flag *Flag, value string, origArg string) error {
+	if err := flag.Value.Set(value); err != nil {
+		return f.failf("invalid argument %q for %s: %v", value, origArg, err)
+	}
+	// mark as visited for Visit()
+	if f.actual == nil {
+		f.actual = make(map[NormalizedName]*Flag)
+	}
+	f.actual[f.normalizeFlagName(flag.Name)] = flag
+	f.orderedActual = append(f.orderedActual, flag)
+	flag.Changed = true
+	if len(flag.Deprecated) > 0 {
+		fmt.Fprintf(os.Stderr, "Flag --%s has been deprecated, %s\n", flag.Name, flag.Deprecated)
+	}
+	if len(flag.ShorthandDeprecated) > 0 && containsShorthand(origArg, flag.Shorthand) {
+		fmt.Fprintf(os.Stderr, "Flag shorthand -%s has been deprecated, %s\n", flag.Shorthand, flag.ShorthandDeprecated)
+	}
+	return nil
+}
+
+func containsShorthand(arg, shorthand string) bool {
+	// filter out flags --<flag_name>
+	if strings.HasPrefix(arg, "-") {
+		return false
+	}
+	arg = strings.SplitN(arg, "=", 2)[0]
+	return strings.Contains(arg, shorthand)
+}
+
 func (f *FlagSet) parseLongArg(s string, args []string, fn parseFunc) (a []string, err error) {
 	a = args
 	name := s[2:]
@@ -858,11 +877,10 @@ func (f *FlagSet) parseLongArg(s string, args []string, fn parseFunc) (a []strin
 		err = f.failf("bad flag syntax: %s", s)
 		return
 	}
-
 	split := strings.SplitN(name, "=", 2)
 	name = split[0]
-	flag, exists := f.formal[f.normalizeFlagName(name)]
-	if !exists {
+	flag, alreadythere := f.formal[f.normalizeFlagName(name)]
+	if !alreadythere {
 		if name == "help" { // special case for nice help message.
 			f.usage()
 			return a, ErrHelp
@@ -870,12 +888,11 @@ func (f *FlagSet) parseLongArg(s string, args []string, fn parseFunc) (a []strin
 		err = f.failf("unknown flag: --%s", name)
 		return
 	}
-
 	var value string
 	if len(split) == 2 {
 		// '--flag=arg'
 		value = split[1]
-	} else if flag.NoOptDefVal != "" {
+	} else if len(flag.NoOptDefVal) > 0 {
 		// '--flag' (arg was optional)
 		value = flag.NoOptDefVal
 	} else if len(a) > 0 {
@@ -887,8 +904,7 @@ func (f *FlagSet) parseLongArg(s string, args []string, fn parseFunc) (a []strin
 		err = f.failf("flag needs an argument: %s", s)
 		return
 	}
-
-	err = fn(flag, value)
+	err = fn(flag, value, s)
 	return
 }
 
@@ -896,49 +912,38 @@ func (f *FlagSet) parseSingleShortArg(shorthands string, args []string, fn parse
 	if strings.HasPrefix(shorthands, "test.") {
 		return
 	}
-
 	outArgs = args
 	outShorts = shorthands[1:]
 	c := shorthands[0]
 
-	flag, exists := f.shorthands[c]
-	if !exists {
+	flag, alreadythere := f.shorthands[c]
+	if !alreadythere {
 		if c == 'h' { // special case for nice help message.
 			f.usage()
 			err = ErrHelp
 			return
 		}
+		//TODO continue on error
 		err = f.failf("unknown shorthand flag: %q in -%s", c, shorthands)
 		return
 	}
-
 	var value string
 	if len(shorthands) > 2 && shorthands[1] == '=' {
-		// '-f=arg'
 		value = shorthands[2:]
 		outShorts = ""
-	} else if flag.NoOptDefVal != "" {
-		// '-f' (arg was optional)
+	} else if len(flag.NoOptDefVal) > 0 {
 		value = flag.NoOptDefVal
 	} else if len(shorthands) > 1 {
-		// '-farg'
 		value = shorthands[1:]
 		outShorts = ""
 	} else if len(args) > 0 {
-		// '-f arg'
 		value = args[0]
 		outArgs = args[1:]
 	} else {
-		// '-f' (arg was required)
 		err = f.failf("flag needs an argument: %q in -%s", c, shorthands)
 		return
 	}
-
-	if flag.ShorthandDeprecated != "" {
-		fmt.Fprintf(f.out(), "Flag shorthand -%s has been deprecated, %s\n", flag.Shorthand, flag.ShorthandDeprecated)
-	}
-
-	err = fn(flag, value)
+	err = fn(flag, value, shorthands)
 	return
 }
 
@@ -946,7 +951,6 @@ func (f *FlagSet) parseShortArg(s string, args []string, fn parseFunc) (a []stri
 	a = args
 	shorthands := s[1:]
 
-	// "shorthands" can be a series of shorthand letters of flags (e.g. "-vvv").
 	for len(shorthands) > 0 {
 		shorthands, a, err = f.parseSingleShortArg(shorthands, args, fn)
 		if err != nil {
@@ -994,18 +998,13 @@ func (f *FlagSet) parseArgs(args []string, fn parseFunc) (err error) {
 // The return value will be ErrHelp if -help was set but not defined.
 func (f *FlagSet) Parse(arguments []string) error {
 	f.parsed = true
-
-	if len(arguments) < 0 {
-		return nil
-	}
-
 	f.args = make([]string, 0, len(arguments))
 
-	set := func(flag *Flag, value string) error {
-		return f.Set(flag.Name, value)
+	assign := func(flag *Flag, value, origArg string) error {
+		return f.setFlag(flag, value, origArg)
 	}
 
-	err := f.parseArgs(arguments, set)
+	err := f.parseArgs(arguments, assign)
 	if err != nil {
 		switch f.errorHandling {
 		case ContinueOnError:
@@ -1019,7 +1018,7 @@ func (f *FlagSet) Parse(arguments []string) error {
 	return nil
 }
 
-type parseFunc func(flag *Flag, value string) error
+type parseFunc func(flag *Flag, value, origArg string) error
 
 // ParseAll parses flag definitions from the argument list, which should not
 // include the command name. The arguments for fn are flag and value. Must be
@@ -1030,7 +1029,11 @@ func (f *FlagSet) ParseAll(arguments []string, fn func(flag *Flag, value string)
 	f.parsed = true
 	f.args = make([]string, 0, len(arguments))
 
-	err := f.parseArgs(arguments, fn)
+	assign := func(flag *Flag, value, origArg string) error {
+		return fn(flag, value)
+	}
+
+	err := f.parseArgs(arguments, assign)
 	if err != nil {
 		switch f.errorHandling {
 		case ContinueOnError:
