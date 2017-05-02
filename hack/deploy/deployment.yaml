@@ -20,4 +20,6 @@ spec:
         image: k8sdb/k8s-es:canary
         args:
         - run
+        - --operator=canary
+        - --elasticdump=canary
         - --v=4
