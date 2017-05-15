@@ -2,18 +2,18 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    run: k8sdb-elasticsearch
-  name: k8sdb-elasticsearch
+    run: k8ses-operator
+  name: k8ses-operator
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      run: k8sdb-elasticsearch
+      run: k8ses-operator
   template:
     metadata:
       labels:
-        run: k8sdb-elasticsearch
+        run: k8ses-operator
     spec:
       containers:
       - name: k8sdb-es
