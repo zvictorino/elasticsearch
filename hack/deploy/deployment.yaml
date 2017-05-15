@@ -17,9 +17,9 @@ spec:
     spec:
       containers:
       - name: k8sdb-es
-        image: k8sdb/k8s-es:canary
+        image: k8sdb/k8s-es:0.1.0
         args:
         - run
-        - --operator=canary
-        - --elasticdump=canary
+        - --operator=0.1.0
+        - --elasticdump=2.4.2
         - --v=4

@@ -1,5 +1,5 @@
 hash: 6818a07dc7554b5630973032bdd1e86102206656a5277c535a8047fc49cd45c8
-updated: 2017-05-15T13:50:02.146809387+06:00
+updated: 2017-05-15T04:33:30.565369601-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -182,7 +182,7 @@ imports:
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/spf13/cobra
-  version: e9078fccb8b1e6914310b96d5e1be43713f3a372
+  version: 4cdb38c072b86bf795d2c81de50784d9fdd6eb77
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/ugorji/go
@@ -274,7 +274,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/kubernetes
-  version: f07eea23494be1e7c11a8e2cf51bd96d1ec9fdf1
+  version: 8eb75a5810cba92ccad845ca360cf924f2385881
   subpackages:
   - pkg/api
   - pkg/api/errors
