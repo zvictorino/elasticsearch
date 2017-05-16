@@ -146,7 +146,7 @@ func (c *Controller) createStatefulSet(elastic *tapi.Elastic) (*kapps.StatefulSe
 		},
 		Spec: kapps.StatefulSetSpec{
 			Replicas:    elastic.Spec.Replicas,
-			ServiceName: elastic.Spec.ServiceAccountName,
+			ServiceName: c.governingService,
 			Template: kapi.PodTemplateSpec{
 				ObjectMeta: kapi.ObjectMeta{
 					Labels:      podLabels,
