@@ -35,8 +35,9 @@ func (c *Controller) create(elastic *tapi.Elastic) error {
 	if err := c.validateElastic(elastic); err != nil {
 		c.eventRecorder.Event(elastic, kapi.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
 
-		if elastic, err = c.ExtClient.Elastics(elastic.Namespace).Get(elastic.Name); err != nil {
-			return err
+		var _err error
+		if elastic, _err = c.ExtClient.Elastics(elastic.Namespace).Get(elastic.Name); _err != nil {
+			return _err
 		}
 
 		elastic.Status.Phase = tapi.DatabasePhaseFailed
