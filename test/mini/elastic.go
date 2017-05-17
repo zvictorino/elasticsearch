@@ -1,14 +1,13 @@
 package mini
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
-	"errors"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/log"
 	tapi "github.com/k8sdb/apimachinery/api"
-	amc "github.com/k8sdb/apimachinery/pkg/controller"
 	"github.com/k8sdb/elasticsearch/pkg/controller"
 	kapi "k8s.io/kubernetes/pkg/api"
 )
@@ -18,10 +17,10 @@ const durationCheckElastic = time.Minute * 30
 func NewElastic() *tapi.Elastic {
 	elastic := &tapi.Elastic{
 		ObjectMeta: kapi.ObjectMeta{
-			Name:      rand.WithUniqSuffix("e2e-elastic"),
+			Name: rand.WithUniqSuffix("e2e-elastic"),
 		},
 		Spec: tapi.ElasticSpec{
-			Version: "canary",
+			Version:  "canary",
 			Replicas: 1,
 		},
 	}
@@ -62,7 +61,7 @@ func CheckElasticWorkload(c *controller.Controller, elastic *tapi.Elastic) error
 	}
 
 	// SatatefulSet for Elastic database
-	statefulSetName := fmt.Sprintf("%v-%v", amc.DatabaseNamePrefix, elastic.Name)
+	statefulSetName := fmt.Sprintf("%v-%v", elastic.Name, tapi.ResourceCodeElastic)
 	if _, err := c.Client.Apps().StatefulSets(elastic.Namespace).Get(statefulSetName); err != nil {
 		return err
 	}
