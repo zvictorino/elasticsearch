@@ -82,7 +82,7 @@ func (c *Controller) create(elastic *tapi.Elastic) error {
 		var message string
 
 		if deletedDb.Labels[amc.LabelDatabaseKind] != tapi.ResourceKindElastic {
-			message = fmt.Sprintf(`Invalid Elastic: "%v". Exists irrelevant DeletedDatabase: "%v"`,
+			message = fmt.Sprintf(`Invalid Elastic: "%v". Exists DeletedDatabase "%v" of different Kind`,
 				elastic.Name, deletedDb.Name)
 		} else {
 			if deletedDb.Status.Phase == tapi.DeletedDatabasePhaseRecovering {
