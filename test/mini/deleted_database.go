@@ -9,15 +9,15 @@ import (
 	k8serr "k8s.io/kubernetes/pkg/api/errors"
 )
 
-const durationCheckDeletedDatabase = time.Minute * 30
+const durationCheckDormantDatabase = time.Minute * 30
 
-func CheckDeletedDatabasePhase(c *controller.Controller, elastic *tapi.Elastic, phase tapi.DeletedDatabasePhase) (bool, error) {
+func CheckDormantDatabasePhase(c *controller.Controller, elastic *tapi.Elastic, phase tapi.DormantDatabasePhase) (bool, error) {
 	doneChecking := false
 	then := time.Now()
 	now := time.Now()
 
-	for now.Sub(then) < durationCheckDeletedDatabase {
-		deletedDb, err := c.ExtClient.DeletedDatabases(elastic.Namespace).Get(elastic.Name)
+	for now.Sub(then) < durationCheckDormantDatabase {
+		dormantDb, err := c.ExtClient.DormantDatabases(elastic.Namespace).Get(elastic.Name)
 		if err != nil {
 			if k8serr.IsNotFound(err) {
 				time.Sleep(time.Second * 10)
@@ -28,9 +28,9 @@ func CheckDeletedDatabasePhase(c *controller.Controller, elastic *tapi.Elastic, 
 			}
 		}
 
-		log.Debugf("DeletedDatabase Phase: %v", deletedDb.Status.Phase)
+		log.Debugf("DormantDatabase Phase: %v", dormantDb.Status.Phase)
 
-		if deletedDb.Status.Phase == phase {
+		if dormantDb.Status.Phase == phase {
 			doneChecking = true
 			break
 		}
@@ -47,18 +47,18 @@ func CheckDeletedDatabasePhase(c *controller.Controller, elastic *tapi.Elastic, 
 	return true, nil
 }
 
-func WipeOutDeletedDatabase(c *controller.Controller, elastic *tapi.Elastic) error {
-	deletedDb, err := c.ExtClient.DeletedDatabases(elastic.Namespace).Get(elastic.Name)
+func WipeOutDormantDatabase(c *controller.Controller, elastic *tapi.Elastic) error {
+	dormantDb, err := c.ExtClient.DormantDatabases(elastic.Namespace).Get(elastic.Name)
 	if err != nil {
 		return err
 	}
 
-	deletedDb.Spec.WipeOut = true
+	dormantDb.Spec.WipeOut = true
 
-	_, err = c.ExtClient.DeletedDatabases(deletedDb.Namespace).Update(deletedDb)
+	_, err = c.ExtClient.DormantDatabases(dormantDb.Namespace).Update(dormantDb)
 	return err
 }
 
-func DeleteDeletedDatabase(c *controller.Controller, elastic *tapi.Elastic) error {
-	return c.ExtClient.DeletedDatabases(elastic.Namespace).Delete(elastic.Name)
+func DeleteDormantDatabase(c *controller.Controller, elastic *tapi.Elastic) error {
+	return c.ExtClient.DormantDatabases(elastic.Namespace).Delete(elastic.Name)
 }

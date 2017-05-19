@@ -68,8 +68,8 @@ func (c *Controller) RunAndHold() {
 	go c.watchElastic()
 	// Watch Snapshot with labelSelector only for Elastic
 	go c.watchSnapshot()
-	// Watch DeletedDatabase with labelSelector only for Elastic
-	go c.watchDeletedDatabase()
+	// Watch DormantDatabase with labelSelector only for Elastic
+	go c.watchDormantDatabase()
 	// hold
 	hold.Hold()
 }
@@ -98,7 +98,7 @@ func (c *Controller) watchElastic() {
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				if err := c.delete(obj.(*tapi.Elastic)); err != nil {
+				if err := c.pause(obj.(*tapi.Elastic)); err != nil {
 					log.Errorln(err)
 				}
 			},
@@ -145,27 +145,27 @@ func (c *Controller) watchSnapshot() {
 	amc.NewSnapshotController(c.Client, c.ExtClient, c, lw, c.syncPeriod).Run()
 }
 
-func (c *Controller) watchDeletedDatabase() {
+func (c *Controller) watchDormantDatabase() {
 	labelMap := map[string]string{
 		amc.LabelDatabaseKind: tapi.ResourceKindElastic,
 	}
 	// Watch with label selector
 	lw := &cache.ListWatch{
 		ListFunc: func(opts kapi.ListOptions) (runtime.Object, error) {
-			return c.ExtClient.DeletedDatabases(kapi.NamespaceAll).List(
+			return c.ExtClient.DormantDatabases(kapi.NamespaceAll).List(
 				kapi.ListOptions{
 					LabelSelector: labels.SelectorFromSet(labels.Set(labelMap)),
 				})
 		},
 		WatchFunc: func(options kapi.ListOptions) (watch.Interface, error) {
-			return c.ExtClient.DeletedDatabases(kapi.NamespaceAll).Watch(
+			return c.ExtClient.DormantDatabases(kapi.NamespaceAll).Watch(
 				kapi.ListOptions{
 					LabelSelector: labels.SelectorFromSet(labels.Set(labelMap)),
 				})
 		},
 	}
 
-	amc.NewDeletedDbController(c.Client, c.ExtClient, c, lw, c.syncPeriod).Run()
+	amc.NewDormantDbController(c.Client, c.ExtClient, c, lw, c.syncPeriod).Run()
 }
 
 func (c *Controller) ensureThirdPartyResource() {

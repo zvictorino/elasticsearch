@@ -16,7 +16,6 @@ import (
 
 const (
 	annotationDatabaseVersion  = "elastic.k8sdb.com/version"
-	GoverningElasticsearch     = "governing-elasticsearch"
 	imageElasticsearch         = "k8sdb/elasticsearch"
 	imageOperatorElasticsearch = "k8sdb/k8s-es"
 	// Duration in Minute
@@ -273,8 +272,8 @@ func addDataVolume(statefulSet *kapps.StatefulSet, storage *tapi.StorageSpec) {
 	}
 }
 
-func (w *Controller) createDeletedDatabase(elastic *tapi.Elastic) (*tapi.DeletedDatabase, error) {
-	deletedDb := &tapi.DeletedDatabase{
+func (c *Controller) createDormantDatabase(elastic *tapi.Elastic) (*tapi.DormantDatabase, error) {
+	dormantDb := &tapi.DormantDatabase{
 		ObjectMeta: kapi.ObjectMeta{
 			Name:      elastic.Name,
 			Namespace: elastic.Namespace,
@@ -282,7 +281,7 @@ func (w *Controller) createDeletedDatabase(elastic *tapi.Elastic) (*tapi.Deleted
 				amc.LabelDatabaseKind: tapi.ResourceKindElastic,
 			},
 		},
-		Spec: tapi.DeletedDatabaseSpec{
+		Spec: tapi.DormantDatabaseSpec{
 			Origin: tapi.Origin{
 				ObjectMeta: kapi.ObjectMeta{
 					Name:        elastic.Name,
@@ -296,10 +295,10 @@ func (w *Controller) createDeletedDatabase(elastic *tapi.Elastic) (*tapi.Deleted
 			},
 		},
 	}
-	return w.ExtClient.DeletedDatabases(deletedDb.Namespace).Create(deletedDb)
+	return c.ExtClient.DormantDatabases(dormantDb.Namespace).Create(dormantDb)
 }
 
-func (w *Controller) reCreateElastic(elastic *tapi.Elastic) error {
+func (c *Controller) reCreateElastic(elastic *tapi.Elastic) error {
 	_elastic := &tapi.Elastic{
 		ObjectMeta: kapi.ObjectMeta{
 			Name:        elastic.Name,
@@ -311,7 +310,7 @@ func (w *Controller) reCreateElastic(elastic *tapi.Elastic) error {
 		Status: elastic.Status,
 	}
 
-	if _, err := w.ExtClient.Elastics(_elastic.Namespace).Create(_elastic); err != nil {
+	if _, err := c.ExtClient.Elastics(_elastic.Namespace).Create(_elastic); err != nil {
 		return err
 	}
 
@@ -323,7 +322,7 @@ const (
 	snapshotType_DumpRestore = "dump-restore"
 )
 
-func (w *Controller) createRestoreJob(elastic *tapi.Elastic, snapshot *tapi.Snapshot) (*kbatch.Job, error) {
+func (c *Controller) createRestoreJob(elastic *tapi.Elastic, snapshot *tapi.Snapshot) (*kbatch.Job, error) {
 
 	databaseName := elastic.Name
 	jobName := rand.WithUniqSuffix(databaseName)
@@ -334,7 +333,7 @@ func (w *Controller) createRestoreJob(elastic *tapi.Elastic, snapshot *tapi.Snap
 	backupSpec := snapshot.Spec.SnapshotStorageSpec
 
 	// Get PersistentVolume object for Backup Util pod.
-	persistentVolume, err := w.getVolumeForSnapshot(elastic.Spec.Storage, jobName, elastic.Namespace)
+	persistentVolume, err := c.getVolumeForSnapshot(elastic.Spec.Storage, jobName, elastic.Namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +355,7 @@ func (w *Controller) createRestoreJob(elastic *tapi.Elastic, snapshot *tapi.Snap
 					Containers: []kapi.Container{
 						{
 							Name:  SnapshotProcess_Restore,
-							Image: ImageElasticDump + ":" + w.elasticDumpTag,
+							Image: ImageElasticDump + ":" + c.elasticDumpTag,
 							Args: []string{
 								fmt.Sprintf(`--process=%s`, SnapshotProcess_Restore),
 								fmt.Sprintf(`--host=%s`, databaseName),
@@ -394,7 +393,7 @@ func (w *Controller) createRestoreJob(elastic *tapi.Elastic, snapshot *tapi.Snap
 		},
 	}
 
-	return w.Client.Batch().Jobs(elastic.Namespace).Create(job)
+	return c.Client.Batch().Jobs(elastic.Namespace).Create(job)
 }
 
 func getStatefulSetName(databaseName string) string {
