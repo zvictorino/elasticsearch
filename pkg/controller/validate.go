@@ -20,10 +20,9 @@ func (c *Controller) validateElastic(elastic *tapi.Elastic) error {
 		return fmt.Errorf(`Image %v:%v not found`, imageOperatorElasticsearch, c.operatorTag)
 	}
 
-	storage := elastic.Spec.Storage
-	if storage != nil {
+	if elastic.Spec.Storage != nil {
 		var err error
-		if storage, err = c.ValidateStorageSpec(storage); err != nil {
+		if _, err = c.ValidateStorageSpec(elastic.Spec.Storage); err != nil {
 			return err
 		}
 	}
