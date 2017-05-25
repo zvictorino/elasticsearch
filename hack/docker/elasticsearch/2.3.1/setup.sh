@@ -21,7 +21,7 @@ clean() {
 build_docker() {
     pushd $REPO_ROOT/hack/docker/elasticsearch/2.3.1
     cp -r ../lib .
-	local cmd="docker build -t k8sdb/$IMG:$TAG ."
+	local cmd="docker build -t kubedb/$IMG:$TAG ."
 	echo $cmd; $cmd
     rm -r lib
 	popd

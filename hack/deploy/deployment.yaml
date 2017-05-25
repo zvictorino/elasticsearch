@@ -16,8 +16,8 @@ spec:
         run: k8ses-operator
     spec:
       containers:
-      - name: k8sdb-es
-        image: k8sdb/k8s-es:0.1.0
+      - name: kubedb-es
+        image: kubedb/k8s-es:0.1.0
         args:
         - run
         - --operator=0.1.0
