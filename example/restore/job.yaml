@@ -13,7 +13,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: restore
-        image: k8sdb/elasticdump:canary
+        image: kubedb/elasticdump:canary
         args:
         - --process=restore
         - --host=""
