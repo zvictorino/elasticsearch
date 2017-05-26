@@ -89,7 +89,7 @@ func (c *Controller) create(elastic *tapi.Elastic) error {
 	)
 
 	// create Governing Service
-	governingService := c.option.GoverningService
+	governingService := c.opt.GoverningService
 	if err := c.CreateGoverningService(governingService, elastic.Namespace); err != nil {
 		c.eventRecorder.Eventf(
 			elastic,

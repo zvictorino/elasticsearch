@@ -24,7 +24,7 @@ import (
 	"k8s.io/kubernetes/pkg/watch"
 )
 
-type Option struct {
+type Options struct {
 	// Tag of elasticdump
 	ElasticDumpTag string
 	// Tag of elasticsearch operator
@@ -48,7 +48,7 @@ type Controller struct {
 	// Event Recorder
 	eventRecorder record.EventRecorder
 	// Flag data
-	option *Option
+	opt Options
 	// sync time to sync the list.
 	syncPeriod time.Duration
 }
@@ -60,7 +60,7 @@ func New(
 	client clientset.Interface,
 	extClient tcs.ExtensionInterface,
 	promClient *pcm.MonitoringV1alpha1Client,
-	opt *Option,
+	opt Options,
 ) *Controller {
 	return &Controller{
 		Controller: &amc.Controller{
@@ -69,8 +69,8 @@ func New(
 		},
 		cronController: amc.NewCronController(client, extClient),
 		promClient:     promClient,
-		eventRecorder:  eventer.NewEventRecorder(client, "Elastic Controller"),
-		option:         opt,
+		eventRecorder:  eventer.NewEventRecorder(client, "Elastic operator"),
+		opt:            opt,
 		syncPeriod:     time.Minute * 2,
 	}
 }

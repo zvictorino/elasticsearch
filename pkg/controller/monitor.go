@@ -16,39 +16,39 @@ func (c *Controller) newMonitorController(elastic *tapi.Elastic) (monitor.Monito
 	}
 
 	if monitorSpec.Prometheus != nil {
-		image := fmt.Sprintf("%v:%v", docker.ImageExporter, c.option.ExporterTag)
-		return monitor.NewPrometheusController(c.Client, c.promClient, c.option.ExporterNamespace, image), nil
+		image := fmt.Sprintf("%v:%v", docker.ImageExporter, c.opt.ExporterTag)
+		return monitor.NewPrometheusController(c.Client, c.promClient, c.opt.ExporterNamespace, image), nil
 	}
 
 	return nil, fmt.Errorf("Monitoring controller not found for %v", monitorSpec)
 }
 
 func (c *Controller) addMonitor(elastic *tapi.Elastic) error {
-	monitor, err := c.newMonitorController(elastic)
+	ctrl, err := c.newMonitorController(elastic)
 	if err != nil {
 		return err
 	}
-	return monitor.AddMonitor(elastic.ObjectMeta, elastic.Spec.Monitor)
+	return ctrl.AddMonitor(elastic.ObjectMeta, elastic.Spec.Monitor)
 }
 
 func (c *Controller) deleteMonitor(elastic *tapi.Elastic) error {
-	m, err := c.newMonitorController(elastic)
+	ctrl, err := c.newMonitorController(elastic)
 	if err != nil {
 		return err
 	}
-	return m.DeleteMonitor(elastic.ObjectMeta, elastic.Spec.Monitor)
+	return ctrl.DeleteMonitor(elastic.ObjectMeta, elastic.Spec.Monitor)
 }
 
 func (c *Controller) updateMonitor(oldElastic, updatedElastic *tapi.Elastic) error {
 	var err error
-	var monitor monitor.Monitor
+	var ctrl monitor.Monitor
 	if updatedElastic.Spec.Monitor == nil {
-		monitor, err = c.newMonitorController(oldElastic)
+		ctrl, err = c.newMonitorController(oldElastic)
 	} else {
-		monitor, err = c.newMonitorController(updatedElastic)
+		ctrl, err = c.newMonitorController(updatedElastic)
 	}
 	if err != nil {
 		return err
 	}
-	return monitor.UpdateMonitor(updatedElastic.ObjectMeta, oldElastic.Spec.Monitor, updatedElastic.Spec.Monitor)
+	return ctrl.UpdateMonitor(updatedElastic.ObjectMeta, oldElastic.Spec.Monitor, updatedElastic.Spec.Monitor)
 }

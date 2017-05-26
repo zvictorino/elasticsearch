@@ -28,8 +28,8 @@ func (c *Controller) ValidateSnapshot(snapshot *tapi.Snapshot) error {
 		return fmt.Errorf(`Object 'DatabaseName' is missing in '%v'`, snapshot.Spec)
 	}
 
-	if err := docker.CheckDockerImageVersion(docker.ImageElasticdump, c.option.ElasticDumpTag); err != nil {
-		return fmt.Errorf(`Image %v:%v not found`, docker.ImageElasticdump, c.option.ElasticDumpTag)
+	if err := docker.CheckDockerImageVersion(docker.ImageElasticdump, c.opt.ElasticDumpTag); err != nil {
+		return fmt.Errorf(`Image %v:%v not found`, docker.ImageElasticdump, c.opt.ElasticDumpTag)
 	}
 
 	labelMap := map[string]string{
@@ -112,7 +112,7 @@ func (c *Controller) GetSnapshotter(snapshot *tapi.Snapshot) (*kbatch.Job, error
 					Containers: []kapi.Container{
 						{
 							Name:  SnapshotProcess_Backup,
-							Image: docker.ImageElasticdump + ":" + c.option.ElasticDumpTag,
+							Image: docker.ImageElasticdump + ":" + c.opt.ElasticDumpTag,
 							Args: []string{
 								fmt.Sprintf(`--process=%s`, SnapshotProcess_Backup),
 								fmt.Sprintf(`--host=%s`, databaseName),
