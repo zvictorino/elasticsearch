@@ -1,5 +1,5 @@
-hash: 4b07a0c8a2933f997b5f7922d0921061724fd9ffc61b94b0b7b8f3a2a9d920f6
-updated: 2017-05-31T14:18:56.051921774+06:00
+hash: a53a6039ed4e4348fcf2d7997ed425b267c4cb85472b8c7dc8d518e2f3112a3f
+updated: 2017-05-31T05:07:26.586340629-07:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -360,7 +360,7 @@ imports:
   - util/homedir
   - util/integer
 - name: k8s.io/kubernetes
-  version: f07eea23494be1e7c11a8e2cf51bd96d1ec9fdf1
+  version: 8eb75a5810cba92ccad845ca360cf924f2385881
   subpackages:
   - pkg/api
   - pkg/api/errors
