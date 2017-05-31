@@ -34,6 +34,7 @@ func NewCmdRun() *cobra.Command {
 		ExporterTag:       "canary",
 		GoverningService:  "kubedb",
 		Address:           ":8080",
+		EnableAnalytics:   true,
 	}
 
 	cmd := &cobra.Command{
@@ -87,6 +88,9 @@ func NewCmdRun() *cobra.Command {
 	// exporter tags
 	cmd.Flags().StringVar(&opt.ExporterNamespace, "exporter.namespace", opt.ExporterNamespace, "Namespace for monitoring exporter")
 	cmd.Flags().StringVar(&opt.ExporterTag, "exporter.tag", opt.ExporterTag, "Tag of monitoring exporter")
+
+	// Analytics flags
+	cmd.Flags().BoolVar(&opt.EnableAnalytics, "analytics", opt.EnableAnalytics, "Send analytical event to Google Analytics")
 
 	return cmd
 }
