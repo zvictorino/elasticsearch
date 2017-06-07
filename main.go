@@ -13,9 +13,7 @@ import (
 )
 
 func main() {
-	logs.InitLogs()
 	defer logs.FlushLogs()
-
 	var rootCmd = &cobra.Command{
 		Use: "es-operator",
 		PersistentPreRun: func(c *cobra.Command, args []string) {
@@ -25,6 +23,9 @@ func main() {
 		},
 	}
 	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
+	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
+	flag.CommandLine.Parse([]string{})
+	logs.InitLogs()
 
 	rootCmd.AddCommand(version.NewCmdVersion())
 	rootCmd.AddCommand(NewCmdRun())
