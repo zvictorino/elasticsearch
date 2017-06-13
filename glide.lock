@@ -1,5 +1,5 @@
-hash: 4b07a0c8a2933f997b5f7922d0921061724fd9ffc61b94b0b7b8f3a2a9d920f6
-updated: 2017-06-13T11:52:09.084740154+06:00
+hash: dcd44e64653110fe1feeb6c9825ab3d4c829a642cefdce737113eebb6e599cec
+updated: 2017-06-13T14:11:20.773409128-07:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -53,6 +53,9 @@ imports:
   - private/waiter
   - service/s3
   - service/sts
+- name: github.com/Azure/azure-sdk-for-go
+  version: 0984e0641ae43b89283223034574d6465be93bf4
+  vcs: git
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
   subpackages:
@@ -136,7 +139,9 @@ imports:
 - name: github.com/gorilla/mux
   version: 8096f47503459bcc74d1f4c487b7e6e42e5746b5
 - name: github.com/graymeta/stow
-  version: d5dd9e1c978bc9a265e29b281589ebdc50276ed7
+  version: d4b253dd4995360ae103b6460bbadeaa7fb3cdb4
+  repo: https://github.com/appscode/stow.git
+  vcs: git
   subpackages:
   - google
   - s3
@@ -262,12 +267,8 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: a69f0f19d246419bb931b0ac8f4f8d3f3e6d4feb
+  version: 324744a33f1f37e63dd1695cfb3ec9a3e4a1cb05
   subpackages:
-  - cloudmonitoring/v2beta2
-  - compute/v1
-  - container/v1
-  - dns/v1
   - gensupport
   - googleapi
   - googleapi/internal/uritemplates
@@ -361,7 +362,7 @@ imports:
   - util/homedir
   - util/integer
 - name: k8s.io/kubernetes
-  version: f07eea23494be1e7c11a8e2cf51bd96d1ec9fdf1
+  version: 8eb75a5810cba92ccad845ca360cf924f2385881
   subpackages:
   - pkg/api
   - pkg/api/errors
