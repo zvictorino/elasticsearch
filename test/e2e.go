@@ -60,7 +60,7 @@ func getController() (c *controller.Controller, err error) {
 			e2eController.controller = controller.New(client, extClient, promClient, cronController, controller.Options{
 				GoverningService: "kubedb",
 				ElasticDumpTag:   "canary",
-				OperatorTag:      "canary",
+				DiscoveryTag:     "canary",
 			})
 			e2eController.isControllerRunning = true
 			go c.RunAndHold()
