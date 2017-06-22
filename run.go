@@ -8,7 +8,6 @@ import (
 
 	"github.com/appscode/go/runtime"
 	stringz "github.com/appscode/go/strings"
-	"github.com/appscode/go/version"
 	"github.com/appscode/log"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1alpha1"
 	tcs "github.com/k8sdb/apimachinery/client/clientset"
@@ -30,7 +29,7 @@ func NewCmdRun() *cobra.Command {
 
 	opt := controller.Options{
 		ElasticDumpTag:    "canary",
-		DiscoveryTag:      stringz.Val(version.Version.Version, "canary"),
+		DiscoveryTag:      stringz.Val(Version, "canary"),
 		OperatorNamespace: namespace(),
 		ExporterTag:       "0.2.0",
 		GoverningService:  "kubedb",

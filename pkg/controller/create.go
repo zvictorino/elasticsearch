@@ -222,7 +222,7 @@ func (c *Controller) createStatefulSet(elastic *tapi.Elastic) (*apps.StatefulSet
 		exporter := apiv1.Container{
 			Name: "exporter",
 			Args: []string{
-				"exporter",
+				"export",
 				fmt.Sprintf("--address=:%d", elastic.Spec.Monitor.Prometheus.TargetPort.IntValue()),
 				"--v=3",
 			},
