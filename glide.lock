@@ -1,5 +1,5 @@
-hash: c87ed40bfe12e90cdee4704342cbc1112acfe326478b38069583da09c4279549
-updated: 2017-06-22T07:25:53.546049226-07:00
+hash: 55120302a8cde3e138d9a9b4136aa211f180c2c851615437245236003ba36681
+updated: 2017-06-23T14:18:50.915065998+06:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -88,7 +88,7 @@ imports:
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
-  version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
+  version: 2e44421e256d82ebbf3d4d4fcabe8930b905eff3
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -143,7 +143,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 77ed1c8a01217656d2080ad51981f6e99adaa177
 - name: github.com/k8sdb/apimachinery
-  version: 03306c25db39e386aa72bb614de1e89dc349bb6a
+  version: 3f92c150ed3bedd0d2d19bcc3856360937d06033
   subpackages:
   - api
   - api/install
@@ -153,6 +153,7 @@ imports:
   - pkg/docker
   - pkg/eventer
   - pkg/monitor
+  - pkg/validator
 - name: github.com/mailru/easyjson
   version: d5b7844b561a7bc640052f1b935f7b800330d7e0
   subpackages:
@@ -246,7 +247,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: 324744a33f1f37e63dd1695cfb3ec9a3e4a1cb05
+  version: 1ba364a3bb616587dfd46d5009edefdfd7896ed9
   subpackages:
   - gensupport
   - googleapi
