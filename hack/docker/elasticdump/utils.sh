@@ -77,7 +77,7 @@ push() {
   # 3 - snapshot-name
 
   src_path="/var/dump-backup/$3"
-  osm push -c "$1" "$src_path" "$2/$3"
+  osm push --osmconfig=/etc/osm/config -c "$1" "$src_path" "$2/$3"
   retval=$?
   if [ "$retval" -ne 0 ]; then
         exit 1
@@ -95,7 +95,7 @@ pull() {
   mkdir -p "$dst_path"
   rm -rf "$dst_path"
 
-  osm pull -c "$1" "$2/$3" "$dst_path"
+  osm pull --osmconfig=/etc/osm/config -c "$1" "$2/$3" "$dst_path"
   retval=$?
   if [ "$retval" -ne 0 ]; then
         exit 1
