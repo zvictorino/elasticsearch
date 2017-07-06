@@ -30,6 +30,17 @@ func (c *Controller) PauseDatabase(dormantDb *tapi.DormantDatabase) error {
 		log.Errorln(err)
 		return err
 	}
+
+	elastic := &tapi.Elastic{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dormantDb.OffshootName(),
+			Namespace: dormantDb.Namespace,
+		},
+	}
+	if err := c.deleteRBACStuff(elastic); err != nil {
+		log.Errorln(err)
+		return err
+	}
 	return nil
 }
 

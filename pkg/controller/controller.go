@@ -31,15 +31,17 @@ type Options struct {
 	// Tag of elasticsearch operator
 	DiscoveryTag string
 	// Exporter namespace
-	OperatorNamespace      string
-	OperatorServiceAccount string
-	ExporterTag            string
+	OperatorNamespace string
+	// Exporter tag
+	ExporterTag string
 	// Governing service
 	GoverningService string
 	// Address to listen on for web interface and telemetry.
 	Address string
 	// Enable analytics
 	EnableAnalytics bool
+	// Enable RBAC for database workloads
+	EnableRbac bool
 }
 
 type Controller struct {
@@ -231,7 +233,7 @@ func (c *Controller) ensureThirdPartyResource() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: resourceName,
 			Labels: map[string]string{
-				"app": "kubedb",
+				"app": tapi.DatabaseNamePrefix,
 			},
 		},
 		Description: "Elasticsearch Database by KubeDB",
