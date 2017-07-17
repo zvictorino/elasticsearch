@@ -37,7 +37,7 @@ build_binary() {
 
 build_docker() {
     pushd $REPO_ROOT/hack/docker/es-operator
-    cp $DIST/es-operator/es-operator-linux-amd64 es-operator
+    cp $DIST/es-operator/es-operator-alpine-amd64 es-operator
     chmod 755 es-operator
 
     cat >Dockerfile <<EOL
