@@ -24,7 +24,7 @@ func CreateSnapshot(c *controller.Controller, namespace string, snapshotSpec tap
 			Name:      rand.WithUniqSuffix("e2e-db-snapshot"),
 			Namespace: namespace,
 			Labels: map[string]string{
-				tapi.LabelDatabaseKind: tapi.ResourceKindElastic,
+				tapi.LabelDatabaseKind: tapi.ResourceKindElasticsearch,
 			},
 		},
 		Spec: snapshotSpec,
@@ -117,7 +117,7 @@ func CheckSnapshotData(c *controller.Controller, snapshot *tapi.Snapshot) (int, 
 
 func CheckSnapshotScheduler(c *controller.Controller, elastic *tapi.Elastic) error {
 	labelMap := map[string]string{
-		tapi.LabelDatabaseKind: tapi.ResourceKindElastic,
+		tapi.LabelDatabaseKind: tapi.ResourceKindElasticsearch,
 		tapi.LabelDatabaseName: elastic.Name,
 	}
 
