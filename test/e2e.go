@@ -63,7 +63,7 @@ func getController() (c *controller.Controller, err error) {
 			e2eController.controller = controller.New(client, extClient, promClient, cronController, controller.Options{
 				GoverningService: "kubedb",
 				ElasticDumpTag:   "2.4.2",
-				DiscoveryTag:     "0.3.0",
+				DiscoveryTag:     "0.4.0",
 				EnableRbac:       enableRbac,
 				EnableAnalytics:  false,
 				Address:          fmt.Sprintf("127.0.0.1:%v", port),
