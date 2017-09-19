@@ -8,13 +8,13 @@ import (
 
 type Framework struct {
 	kubeClient   clientset.Interface
-	extClient    tcs.ExtensionInterface
+	extClient    tcs.KubedbV1alpha1Interface
 	namespace    string
 	name         string
 	StorageClass string
 }
 
-func New(kubeClient clientset.Interface, extClient tcs.ExtensionInterface, storageClass string) *Framework {
+func New(kubeClient clientset.Interface, extClient tcs.KubedbV1alpha1Interface, storageClass string) *Framework {
 	return &Framework{
 		kubeClient:   kubeClient,
 		extClient:    extClient,

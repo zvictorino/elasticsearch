@@ -29,6 +29,8 @@ import:
   version: 5fa44608f6b9b2180a2fd1ecb52e651fd0397794
 - package: gopkg.in/olivere/elastic.v3
   version: v3.0.55
+- package: github.com/appscode/kutil
+  version: release-4.0
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4
