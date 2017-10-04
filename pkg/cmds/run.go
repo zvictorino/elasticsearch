@@ -33,7 +33,7 @@ func NewCmdRun(version string) *cobra.Command {
 		ElasticDumpTag:    "canary",
 		DiscoveryTag:      stringz.Val(version, "canary"),
 		OperatorNamespace: namespace(),
-		ExporterTag:       "0.7.0",
+		ExporterTag:       "0.7.1",
 		GoverningService:  "kubedb",
 		Address:           ":8080",
 		EnableRbac:        false,

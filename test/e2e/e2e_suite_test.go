@@ -70,7 +70,7 @@ var _ = BeforeSuite(func() {
 
 	opt := controller.Options{
 		ElasticDumpTag:    "2.4.2",
-		DiscoveryTag:      "0.7.0",
+		DiscoveryTag:      "0.7.1",
 		OperatorNamespace: root.Namespace(),
 		GoverningService:  tapi.DatabaseNamePrefix,
 	}
