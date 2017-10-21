@@ -5,7 +5,7 @@ import (
 	kutilrbac "github.com/appscode/kutil/rbac/v1beta1"
 	"github.com/k8sdb/apimachinery/apis/kubedb"
 	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1beta1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +38,7 @@ func (c *Controller) createRole(elastic *tapi.Elasticsearch) error {
 					Verbs:         []string{"get"},
 				},
 				{
-					APIGroups: []string{apiv1.GroupName},
+					APIGroups: []string{core.GroupName},
 					Resources: []string{"services", "endpoints"},
 					Verbs:     []string{"get"},
 				},
@@ -67,7 +67,7 @@ func (c *Controller) createServiceAccount(elastic *tapi.Elasticsearch) error {
 			Name:      elastic.OffshootName(),
 			Namespace: elastic.Namespace,
 		},
-		func(in *apiv1.ServiceAccount) *apiv1.ServiceAccount {
+		func(in *core.ServiceAccount) *core.ServiceAccount {
 			return in
 		},
 	)

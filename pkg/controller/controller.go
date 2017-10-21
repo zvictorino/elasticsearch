@@ -12,7 +12,7 @@ import (
 	kutildb "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1/util"
 	amc "github.com/k8sdb/apimachinery/pkg/controller"
 	"github.com/k8sdb/apimachinery/pkg/eventer"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	extensionsobj "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -112,10 +112,10 @@ func (c *Controller) RunAndHold() {
 func (c *Controller) watchElastic() {
 	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return c.ExtClient.Elasticsearchs(apiv1.NamespaceAll).List(metav1.ListOptions{})
+			return c.ExtClient.Elasticsearchs(core.NamespaceAll).List(metav1.ListOptions{})
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return c.ExtClient.Elasticsearchs(apiv1.NamespaceAll).Watch(metav1.ListOptions{})
+			return c.ExtClient.Elasticsearchs(core.NamespaceAll).Watch(metav1.ListOptions{})
 		},
 	}
 
@@ -165,13 +165,13 @@ func (c *Controller) watchSnapshot() {
 	// Watch with label selector
 	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return c.ExtClient.Snapshots(apiv1.NamespaceAll).List(
+			return c.ExtClient.Snapshots(core.NamespaceAll).List(
 				metav1.ListOptions{
 					LabelSelector: labels.SelectorFromSet(labelMap).String(),
 				})
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return c.ExtClient.Snapshots(apiv1.NamespaceAll).Watch(
+			return c.ExtClient.Snapshots(core.NamespaceAll).Watch(
 				metav1.ListOptions{
 					LabelSelector: labels.SelectorFromSet(labelMap).String(),
 				})
@@ -188,13 +188,13 @@ func (c *Controller) watchDormantDatabase() {
 	// Watch with label selector
 	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return c.ExtClient.DormantDatabases(apiv1.NamespaceAll).List(
+			return c.ExtClient.DormantDatabases(core.NamespaceAll).List(
 				metav1.ListOptions{
 					LabelSelector: labels.SelectorFromSet(labelMap).String(),
 				})
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return c.ExtClient.DormantDatabases(apiv1.NamespaceAll).Watch(
+			return c.ExtClient.DormantDatabases(core.NamespaceAll).Watch(
 				metav1.ListOptions{
 					LabelSelector: labels.SelectorFromSet(labelMap).String(),
 				})
@@ -243,7 +243,7 @@ func (c *Controller) ensureCustomResourceDefinition() {
 func (c *Controller) pushFailureEvent(elastic *tapi.Elasticsearch, reason string) {
 	c.recorder.Eventf(
 		elastic.ObjectReference(),
-		apiv1.EventTypeWarning,
+		core.EventTypeWarning,
 		eventer.EventReasonFailedToStart,
 		`Fail to be ready Elasticsearch: "%v". Reason: %v`,
 		elastic.Name,
@@ -262,7 +262,7 @@ func (c *Controller) pushFailureEvent(elastic *tapi.Elasticsearch, reason string
 		return in
 	})
 	if err != nil {
-		c.recorder.Eventf(elastic.ObjectReference(), apiv1.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+		c.recorder.Eventf(elastic.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 	}
 
 }

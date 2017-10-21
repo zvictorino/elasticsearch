@@ -14,7 +14,7 @@ import (
 	"github.com/k8sdb/apimachinery/pkg/eventer"
 	"github.com/k8sdb/apimachinery/pkg/storage"
 	"github.com/k8sdb/elasticsearch/pkg/validator"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,12 +27,12 @@ func (c *Controller) create(elastic *tapi.Elasticsearch) error {
 		return in
 	})
 	if err != nil {
-		c.recorder.Eventf(elastic.ObjectReference(), apiv1.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+		c.recorder.Eventf(elastic.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 		return err
 	}
 
 	if err := validator.ValidateElastic(c.Client, elastic); err != nil {
-		c.recorder.Event(elastic.ObjectReference(), apiv1.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
+		c.recorder.Event(elastic.ObjectReference(), core.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
 		return err
 	}
 	// Validate DiscoveryTag
@@ -43,7 +43,7 @@ func (c *Controller) create(elastic *tapi.Elasticsearch) error {
 	// Event for successful validation
 	c.recorder.Event(
 		elastic.ObjectReference(),
-		apiv1.EventTypeNormal,
+		core.EventTypeNormal,
 		eventer.EventReasonSuccessfulValidate,
 		"Successfully validate Elasticsearch",
 	)
@@ -72,21 +72,21 @@ func (c *Controller) create(elastic *tapi.Elasticsearch) error {
 			return in
 		})
 		if err != nil {
-			c.recorder.Eventf(elastic.ObjectReference(), apiv1.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+			c.recorder.Eventf(elastic.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 			return err
 		}
 		return nil
 	}
 
 	// Event for notification that kubernetes objects are creating
-	c.recorder.Event(elastic.ObjectReference(), apiv1.EventTypeNormal, eventer.EventReasonCreating, "Creating Kubernetes objects")
+	c.recorder.Event(elastic.ObjectReference(), core.EventTypeNormal, eventer.EventReasonCreating, "Creating Kubernetes objects")
 
 	// create Governing Service
 	governingService := c.opt.GoverningService
 	if err := c.CreateGoverningService(governingService, elastic.Namespace); err != nil {
 		c.recorder.Eventf(
 			elastic.ObjectReference(),
-			apiv1.EventTypeWarning,
+			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
 			`Failed to create ServiceAccount: "%v". Reason: %v`,
 			governingService,
@@ -107,7 +107,7 @@ func (c *Controller) create(elastic *tapi.Elasticsearch) error {
 
 	c.recorder.Event(
 		elastic.ObjectReference(),
-		apiv1.EventTypeNormal,
+		core.EventTypeNormal,
 		eventer.EventReasonSuccessfulCreate,
 		"Successfully created Elasticsearch",
 	)
@@ -119,7 +119,7 @@ func (c *Controller) create(elastic *tapi.Elasticsearch) error {
 		if err := c.addMonitor(elastic); err != nil {
 			c.recorder.Eventf(
 				elastic.ObjectReference(),
-				apiv1.EventTypeWarning,
+				core.EventTypeWarning,
 				eventer.EventReasonFailedToAddMonitor,
 				"Failed to add monitoring system. Reason: %v",
 				err,
@@ -129,7 +129,7 @@ func (c *Controller) create(elastic *tapi.Elasticsearch) error {
 		}
 		c.recorder.Event(
 			elastic.ObjectReference(),
-			apiv1.EventTypeNormal,
+			core.EventTypeNormal,
 			eventer.EventReasonSuccessfulMonitorAdd,
 			"Successfully added monitoring system.",
 		)
@@ -144,7 +144,7 @@ func (c *Controller) matchDormantDatabase(elastic *tapi.Elasticsearch) (bool, er
 		if !kerr.IsNotFound(err) {
 			c.recorder.Eventf(
 				elastic.ObjectReference(),
-				apiv1.EventTypeWarning,
+				core.EventTypeWarning,
 				eventer.EventReasonFailedToGet,
 				`Fail to get DormantDatabase: "%v". Reason: %v`,
 				elastic.Name,
@@ -158,7 +158,7 @@ func (c *Controller) matchDormantDatabase(elastic *tapi.Elasticsearch) (bool, er
 	var sendEvent = func(message string) (bool, error) {
 		c.recorder.Event(
 			elastic.ObjectReference(),
-			apiv1.EventTypeWarning,
+			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
 			message,
 		)
@@ -212,7 +212,7 @@ func (c *Controller) ensureService(elastic *tapi.Elasticsearch) error {
 	if err := c.createService(elastic); err != nil {
 		c.recorder.Eventf(
 			elastic.ObjectReference(),
-			apiv1.EventTypeWarning,
+			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
 			"Failed to create Service. Reason: %v",
 			err,
@@ -236,7 +236,7 @@ func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
 	if err != nil {
 		c.recorder.Eventf(
 			elastic.ObjectReference(),
-			apiv1.EventTypeWarning,
+			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
 			"Failed to create StatefulSet. Reason: %v",
 			err,
@@ -249,7 +249,7 @@ func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
 		if err := c.CheckStatefulSetPodStatus(statefulSet, durationCheckStatefulSet); err != nil {
 			c.recorder.Eventf(
 				elastic.ObjectReference(),
-				apiv1.EventTypeWarning,
+				core.EventTypeWarning,
 				eventer.EventReasonFailedToStart,
 				"Failed to create StatefulSet. Reason: %v",
 				err,
@@ -258,7 +258,7 @@ func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
 		} else {
 			c.recorder.Event(
 				elastic.ObjectReference(),
-				apiv1.EventTypeNormal,
+				core.EventTypeNormal,
 				eventer.EventReasonSuccessfulCreate,
 				"Successfully created StatefulSet",
 			)
@@ -271,14 +271,14 @@ func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
 			return in
 		})
 		if err != nil {
-			c.recorder.Eventf(elastic.ObjectReference(), apiv1.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+			c.recorder.Eventf(elastic.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 			return err
 		}
 
 		if err := c.initialize(elastic); err != nil {
 			c.recorder.Eventf(
 				elastic.ObjectReference(),
-				apiv1.EventTypeWarning,
+				core.EventTypeWarning,
 				eventer.EventReasonFailedToInitialize,
 				"Failed to initialize. Reason: %v",
 				err,
@@ -291,7 +291,7 @@ func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
 		return in
 	})
 	if err != nil {
-		c.recorder.Eventf(elastic.ObjectReference(), apiv1.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+		c.recorder.Eventf(elastic.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 		return err
 	}
 
@@ -305,7 +305,7 @@ func (c *Controller) ensureBackupScheduler(elastic *tapi.Elasticsearch) {
 		if err != nil {
 			c.recorder.Eventf(
 				elastic.ObjectReference(),
-				apiv1.EventTypeWarning,
+				core.EventTypeWarning,
 				eventer.EventReasonFailedToSchedule,
 				"Failed to schedule snapshot. Reason: %v",
 				err,
@@ -326,7 +326,7 @@ func (c *Controller) initialize(elastic *tapi.Elasticsearch) error {
 	// Event for notification that kubernetes objects are creating
 	c.recorder.Eventf(
 		elastic.ObjectReference(),
-		apiv1.EventTypeNormal,
+		core.EventTypeNormal,
 		eventer.EventReasonInitializing,
 		`Initializing from Snapshot: "%v"`,
 		snapshotSource.Name,
@@ -359,14 +359,14 @@ func (c *Controller) initialize(elastic *tapi.Elasticsearch) error {
 	if jobSuccess {
 		c.recorder.Event(
 			elastic.ObjectReference(),
-			apiv1.EventTypeNormal,
+			core.EventTypeNormal,
 			eventer.EventReasonSuccessfulInitialize,
 			"Successfully completed initialization",
 		)
 	} else {
 		c.recorder.Event(
 			elastic.ObjectReference(),
-			apiv1.EventTypeWarning,
+			core.EventTypeWarning,
 			eventer.EventReasonFailedToInitialize,
 			"Failed to complete initialization",
 		)
@@ -378,17 +378,17 @@ func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
 	if elastic.Annotations != nil {
 		if val, found := elastic.Annotations["kubedb.com/ignore"]; found {
 			//TODO: Add Event Reason "Ignored"
-			c.recorder.Event(elastic.ObjectReference(), apiv1.EventTypeNormal, "Ignored", val)
+			c.recorder.Event(elastic.ObjectReference(), core.EventTypeNormal, "Ignored", val)
 			return nil
 		}
 	}
 
-	c.recorder.Event(elastic.ObjectReference(), apiv1.EventTypeNormal, eventer.EventReasonPausing, "Pausing Elasticsearch")
+	c.recorder.Event(elastic.ObjectReference(), core.EventTypeNormal, eventer.EventReasonPausing, "Pausing Elasticsearch")
 
 	if elastic.Spec.DoNotPause {
 		c.recorder.Eventf(
 			elastic.ObjectReference(),
-			apiv1.EventTypeWarning,
+			core.EventTypeWarning,
 			eventer.EventReasonFailedToPause,
 			`Elasticsearch "%v" is locked.`,
 			elastic.Name,
@@ -397,7 +397,7 @@ func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
 		if err := c.reCreateElastic(elastic); err != nil {
 			c.recorder.Eventf(
 				elastic.ObjectReference(),
-				apiv1.EventTypeWarning,
+				core.EventTypeWarning,
 				eventer.EventReasonFailedToCreate,
 				`Failed to recreate Elasticsearch: "%v". Reason: %v`,
 				elastic.Name,
@@ -411,7 +411,7 @@ func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
 	if _, err := c.createDormantDatabase(elastic); err != nil {
 		c.recorder.Eventf(
 			elastic.ObjectReference(),
-			apiv1.EventTypeWarning,
+			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
 			`Failed to create DormantDatabase: "%v". Reason: %v`,
 			elastic.Name,
@@ -421,7 +421,7 @@ func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
 	}
 	c.recorder.Eventf(
 		elastic.ObjectReference(),
-		apiv1.EventTypeNormal,
+		core.EventTypeNormal,
 		eventer.EventReasonSuccessfulCreate,
 		`Successfully created DormantDatabase: "%v"`,
 		elastic.Name,
@@ -433,7 +433,7 @@ func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
 		if err := c.deleteMonitor(elastic); err != nil {
 			c.recorder.Eventf(
 				elastic.ObjectReference(),
-				apiv1.EventTypeWarning,
+				core.EventTypeWarning,
 				eventer.EventReasonFailedToDeleteMonitor,
 				"Failed to delete monitoring system. Reason: %v",
 				err,
@@ -443,7 +443,7 @@ func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
 		}
 		c.recorder.Event(
 			elastic.ObjectReference(),
-			apiv1.EventTypeNormal,
+			core.EventTypeNormal,
 			eventer.EventReasonSuccessfulMonitorDelete,
 			"Successfully deleted monitoring system.",
 		)
@@ -454,13 +454,13 @@ func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
 func (c *Controller) update(oldElastic, updatedElastic *tapi.Elasticsearch) error {
 
 	if err := validator.ValidateElastic(c.Client, updatedElastic); err != nil {
-		c.recorder.Event(updatedElastic, apiv1.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
+		c.recorder.Event(updatedElastic, core.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
 		return err
 	}
 	// Event for successful validation
 	c.recorder.Event(
 		updatedElastic.ObjectReference(),
-		apiv1.EventTypeNormal,
+		core.EventTypeNormal,
 		eventer.EventReasonSuccessfulValidate,
 		"Successfully validate Elasticsearch",
 	)
@@ -478,7 +478,7 @@ func (c *Controller) update(oldElastic, updatedElastic *tapi.Elasticsearch) erro
 		if err != nil {
 			c.recorder.Eventf(
 				updatedElastic.ObjectReference(),
-				apiv1.EventTypeNormal,
+				core.EventTypeNormal,
 				eventer.EventReasonFailedToGet,
 				`Failed to get StatefulSet: "%v". Reason: %v`,
 				statefulSetName,
@@ -490,7 +490,7 @@ func (c *Controller) update(oldElastic, updatedElastic *tapi.Elasticsearch) erro
 		if _, err := c.Client.AppsV1beta1().StatefulSets(statefulSet.Namespace).Update(statefulSet); err != nil {
 			c.recorder.Eventf(
 				updatedElastic.ObjectReference(),
-				apiv1.EventTypeNormal,
+				core.EventTypeNormal,
 				eventer.EventReasonFailedToUpdate,
 				`Failed to update StatefulSet: "%v". Reason: %v`,
 				statefulSetName,
@@ -508,7 +508,7 @@ func (c *Controller) update(oldElastic, updatedElastic *tapi.Elasticsearch) erro
 		if err := c.updateMonitor(oldElastic, updatedElastic); err != nil {
 			c.recorder.Eventf(
 				updatedElastic.ObjectReference(),
-				apiv1.EventTypeWarning,
+				core.EventTypeWarning,
 				eventer.EventReasonFailedToUpdateMonitor,
 				"Failed to update monitoring system. Reason: %v",
 				err,
@@ -518,7 +518,7 @@ func (c *Controller) update(oldElastic, updatedElastic *tapi.Elasticsearch) erro
 		}
 		c.recorder.Event(
 			updatedElastic.ObjectReference(),
-			apiv1.EventTypeNormal,
+			core.EventTypeNormal,
 			eventer.EventReasonSuccessfulMonitorUpdate,
 			"Successfully updated monitoring system.",
 		)

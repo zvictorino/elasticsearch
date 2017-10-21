@@ -9,7 +9,7 @@ import (
 	"github.com/k8sdb/elasticsearch/test/e2e/matcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -26,7 +26,7 @@ var _ = Describe("Elasticsearch", func() {
 		f             *framework.Invocation
 		elasticsearch *tapi.Elasticsearch
 		snapshot      *tapi.Snapshot
-		secret        *apiv1.Secret
+		secret        *core.Secret
 		skipMessage   string
 	)
 
@@ -93,10 +93,10 @@ var _ = Describe("Elasticsearch", func() {
 					if f.StorageClass == "" {
 						skipMessage = "Missing StorageClassName. Provide as flag to test this."
 					}
-					elasticsearch.Spec.Storage = &apiv1.PersistentVolumeClaimSpec{
-						Resources: apiv1.ResourceRequirements{
-							Requests: apiv1.ResourceList{
-								apiv1.ResourceStorage: resource.MustParse("5Gi"),
+					elasticsearch.Spec.Storage = &core.PersistentVolumeClaimSpec{
+						Resources: core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceStorage: resource.MustParse("5Gi"),
 							},
 						},
 						StorageClassName: types.StringP(f.StorageClass),
@@ -182,8 +182,8 @@ var _ = Describe("Elasticsearch", func() {
 					snapshot.Spec.StorageSecretName = secret.Name
 					snapshot.Spec.Local = &tapi.LocalSpec{
 						Path: "/repo",
-						VolumeSource: apiv1.VolumeSource{
-							HostPath: &apiv1.HostPathVolumeSource{
+						VolumeSource: core.VolumeSource{
+							HostPath: &core.HostPathVolumeSource{
 								Path: "/repo",
 							},
 						},
@@ -345,8 +345,8 @@ var _ = Describe("Elasticsearch", func() {
 					elasticsearch.Spec.Init = &tapi.InitSpec{
 						ScriptSource: &tapi.ScriptSourceSpec{
 							ScriptPath: "elasticsearch-init-scripts/run.sh",
-							VolumeSource: apiv1.VolumeSource{
-								GitRepo: &apiv1.GitRepoVolumeSource{
+							VolumeSource: core.VolumeSource{
+								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/k8sdb/elasticsearch-init-scripts.git",
 								},
 							},
@@ -405,8 +405,8 @@ var _ = Describe("Elasticsearch", func() {
 							StorageSecretName: secret.Name,
 							Local: &tapi.LocalSpec{
 								Path: "/repo",
-								VolumeSource: apiv1.VolumeSource{
-									HostPath: &apiv1.HostPathVolumeSource{
+								VolumeSource: core.VolumeSource{
+									HostPath: &core.HostPathVolumeSource{
 										Path: "/repo",
 									},
 								},
@@ -445,8 +445,8 @@ var _ = Describe("Elasticsearch", func() {
 								StorageSecretName: secret.Name,
 								Local: &tapi.LocalSpec{
 									Path: "/repo",
-									VolumeSource: apiv1.VolumeSource{
-										HostPath: &apiv1.HostPathVolumeSource{
+									VolumeSource: core.VolumeSource{
+										HostPath: &core.HostPathVolumeSource{
 											Path: "/repo",
 										},
 									},
