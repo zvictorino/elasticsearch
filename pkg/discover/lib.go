@@ -13,7 +13,7 @@ import (
 	"github.com/appscode/go/log"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -49,7 +49,7 @@ func DiscoverEndpoints(config *rest.Config, service, namespace string) {
 	log.Infof("Searching for %s.%s", service, namespace)
 	////////////////////////////////////////////////
 
-	c, err := clientset.NewForConfig(config)
+	c, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatalf("Failed to make client: %v", err)
 	}

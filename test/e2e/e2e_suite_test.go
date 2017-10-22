@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -53,7 +53,7 @@ var _ = BeforeSuite(func() {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	Expect(err).NotTo(HaveOccurred())
 	// Clients
-	kubeClient := clientset.NewForConfigOrDie(config)
+	kubeClient := kubernetes.NewForConfigOrDie(config)
 	extClient := tcs.NewForConfigOrDie(config)
 	// Framework
 	root = framework.New(kubeClient, extClient, storageClass)

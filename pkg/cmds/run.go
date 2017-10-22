@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -54,7 +54,7 @@ func NewCmdRun(version string) *cobra.Command {
 				log.Fatalf(`Image %v:%v not found.`, docker.ImageElasticdump, opt.ElasticDumpTag)
 			}
 
-			client := clientset.NewForConfigOrDie(config)
+			client := kubernetes.NewForConfigOrDie(config)
 			apiExtKubeClient := apiextensionsclient.NewForConfigOrDie(config)
 			extClient := tcs.NewForConfigOrDie(config)
 			promClient, err := pcm.NewForConfig(config)
