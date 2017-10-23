@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
-	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
+	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/k8sdb/apimachinery/pkg/docker"
 	"github.com/k8sdb/apimachinery/pkg/storage"
 	apps "k8s.io/api/apps/v1beta1"
@@ -24,7 +24,7 @@ const (
 	durationCheckStatefulSet = time.Minute * 30
 )
 
-func (c *Controller) findService(elastic *tapi.Elasticsearch) (bool, error) {
+func (c *Controller) findService(elastic *api.Elasticsearch) (bool, error) {
 	name := elastic.OffshootName()
 	service, err := c.Client.CoreV1().Services(elastic.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
@@ -35,14 +35,14 @@ func (c *Controller) findService(elastic *tapi.Elasticsearch) (bool, error) {
 		}
 	}
 
-	if service.Spec.Selector[tapi.LabelDatabaseName] != name {
+	if service.Spec.Selector[api.LabelDatabaseName] != name {
 		return false, fmt.Errorf(`Intended service "%v" already exists`, name)
 	}
 
 	return true, nil
 }
 
-func (c *Controller) createService(elastic *tapi.Elasticsearch) error {
+func (c *Controller) createService(elastic *api.Elasticsearch) error {
 	svc := &core.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   elastic.Name,
@@ -65,12 +65,12 @@ func (c *Controller) createService(elastic *tapi.Elasticsearch) error {
 		},
 	}
 	if elastic.Spec.Monitor != nil &&
-		elastic.Spec.Monitor.Agent == tapi.AgentCoreosPrometheus &&
+		elastic.Spec.Monitor.Agent == api.AgentCoreosPrometheus &&
 		elastic.Spec.Monitor.Prometheus != nil {
 		svc.Spec.Ports = append(svc.Spec.Ports, core.ServicePort{
-			Name:       tapi.PrometheusExporterPortName,
-			Port:       tapi.PrometheusExporterPortNumber,
-			TargetPort: intstr.FromString(tapi.PrometheusExporterPortName),
+			Name:       api.PrometheusExporterPortName,
+			Port:       api.PrometheusExporterPortNumber,
+			TargetPort: intstr.FromString(api.PrometheusExporterPortName),
 		})
 	}
 
@@ -81,7 +81,7 @@ func (c *Controller) createService(elastic *tapi.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) findStatefulSet(elastic *tapi.Elasticsearch) (bool, error) {
+func (c *Controller) findStatefulSet(elastic *api.Elasticsearch) (bool, error) {
 	// SatatefulSet for Elasticsearch database
 	statefulSet, err := c.Client.AppsV1beta1().StatefulSets(elastic.Namespace).Get(elastic.OffshootName(), metav1.GetOptions{})
 	if err != nil {
@@ -92,14 +92,14 @@ func (c *Controller) findStatefulSet(elastic *tapi.Elasticsearch) (bool, error) 
 		}
 	}
 
-	if statefulSet.Labels[tapi.LabelDatabaseKind] != tapi.ResourceKindElasticsearch {
+	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindElasticsearch {
 		return false, fmt.Errorf(`Intended statefulSet "%v" already exists`, elastic.OffshootName())
 	}
 
 	return true, nil
 }
 
-func (c *Controller) createStatefulSet(elastic *tapi.Elasticsearch) (*apps.StatefulSet, error) {
+func (c *Controller) createStatefulSet(elastic *api.Elasticsearch) (*apps.StatefulSet, error) {
 	dockerImage := fmt.Sprintf("%v:%v", docker.ImageElasticsearch, elastic.Spec.Version)
 	initContainerImage := fmt.Sprintf("%v:%v", docker.ImageElasticOperator, c.opt.DiscoveryTag)
 
@@ -121,7 +121,7 @@ func (c *Controller) createStatefulSet(elastic *tapi.Elasticsearch) (*apps.State
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name:            tapi.ResourceNameElasticsearch,
+							Name:            api.ResourceNameElasticsearch,
 							Image:           dockerImage,
 							ImagePullPolicy: core.PullIfNotPresent,
 							Ports: []core.ContainerPort{
@@ -204,22 +204,22 @@ func (c *Controller) createStatefulSet(elastic *tapi.Elasticsearch) (*apps.State
 	}
 
 	if elastic.Spec.Monitor != nil &&
-		elastic.Spec.Monitor.Agent == tapi.AgentCoreosPrometheus &&
+		elastic.Spec.Monitor.Agent == api.AgentCoreosPrometheus &&
 		elastic.Spec.Monitor.Prometheus != nil {
 		exporter := core.Container{
 			Name: "exporter",
 			Args: []string{
 				"export",
-				fmt.Sprintf("--address=:%d", tapi.PrometheusExporterPortNumber),
+				fmt.Sprintf("--address=:%d", api.PrometheusExporterPortNumber),
 				"--v=3",
 			},
 			Image:           docker.ImageOperator + ":" + c.opt.ExporterTag,
 			ImagePullPolicy: core.PullIfNotPresent,
 			Ports: []core.ContainerPort{
 				{
-					Name:          tapi.PrometheusExporterPortName,
+					Name:          api.PrometheusExporterPortName,
 					Protocol:      core.ProtocolTCP,
-					ContainerPort: int32(tapi.PrometheusExporterPortNumber),
+					ContainerPort: int32(api.PrometheusExporterPortNumber),
 				},
 			},
 		}
@@ -280,24 +280,24 @@ func addDataVolume(statefulSet *apps.StatefulSet, pvcSpec *core.PersistentVolume
 	}
 }
 
-func (c *Controller) createDormantDatabase(elastic *tapi.Elasticsearch) (*tapi.DormantDatabase, error) {
-	dormantDb := &tapi.DormantDatabase{
+func (c *Controller) createDormantDatabase(elastic *api.Elasticsearch) (*api.DormantDatabase, error) {
+	dormantDb := &api.DormantDatabase{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      elastic.Name,
 			Namespace: elastic.Namespace,
 			Labels: map[string]string{
-				tapi.LabelDatabaseKind: tapi.ResourceKindElasticsearch,
+				api.LabelDatabaseKind: api.ResourceKindElasticsearch,
 			},
 		},
-		Spec: tapi.DormantDatabaseSpec{
-			Origin: tapi.Origin{
+		Spec: api.DormantDatabaseSpec{
+			Origin: api.Origin{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        elastic.Name,
 					Namespace:   elastic.Namespace,
 					Labels:      elastic.Labels,
 					Annotations: elastic.Annotations,
 				},
-				Spec: tapi.OriginSpec{
+				Spec: api.OriginSpec{
 					Elasticsearch: &elastic.Spec,
 				},
 			},
@@ -307,7 +307,7 @@ func (c *Controller) createDormantDatabase(elastic *tapi.Elasticsearch) (*tapi.D
 	initSpec, _ := json.Marshal(elastic.Spec.Init)
 	if initSpec != nil {
 		dormantDb.Annotations = map[string]string{
-			tapi.ElasticsearchInitSpec: string(initSpec),
+			api.ElasticsearchInitSpec: string(initSpec),
 		}
 	}
 	dormantDb.Spec.Origin.Spec.Elasticsearch.Init = nil
@@ -315,8 +315,8 @@ func (c *Controller) createDormantDatabase(elastic *tapi.Elasticsearch) (*tapi.D
 	return c.ExtClient.DormantDatabases(dormantDb.Namespace).Create(dormantDb)
 }
 
-func (c *Controller) reCreateElastic(elastic *tapi.Elasticsearch) error {
-	_elastic := &tapi.Elasticsearch{
+func (c *Controller) reCreateElastic(elastic *api.Elasticsearch) error {
+	_elastic := &api.Elasticsearch{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        elastic.Name,
 			Namespace:   elastic.Namespace,
@@ -339,12 +339,12 @@ const (
 	snapshotType_DumpRestore = "dump-restore"
 )
 
-func (c *Controller) createRestoreJob(elastic *tapi.Elasticsearch, snapshot *tapi.Snapshot) (*batch.Job, error) {
+func (c *Controller) createRestoreJob(elastic *api.Elasticsearch, snapshot *api.Snapshot) (*batch.Job, error) {
 	databaseName := elastic.Name
 	jobName := snapshot.OffshootName()
 	jobLabel := map[string]string{
-		tapi.LabelDatabaseName: databaseName,
-		tapi.LabelJobType:      SnapshotProcess_Restore,
+		api.LabelDatabaseName: databaseName,
+		api.LabelJobType:      SnapshotProcess_Restore,
 	}
 	backupSpec := snapshot.Spec.SnapshotStorageSpec
 	bucket, err := backupSpec.Container()

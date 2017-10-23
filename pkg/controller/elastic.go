@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
-	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
+	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	kutildb "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1/util"
 	"github.com/k8sdb/apimachinery/pkg/docker"
 	"github.com/k8sdb/apimachinery/pkg/eventer"
@@ -19,11 +19,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Controller) create(elastic *tapi.Elasticsearch) error {
-	_, err := kutildb.TryPatchElasticsearch(c.ExtClient, elastic.ObjectMeta, func(in *tapi.Elasticsearch) *tapi.Elasticsearch {
+func (c *Controller) create(elastic *api.Elasticsearch) error {
+	_, err := kutildb.TryPatchElasticsearch(c.ExtClient, elastic.ObjectMeta, func(in *api.Elasticsearch) *api.Elasticsearch {
 		t := metav1.Now()
 		in.Status.CreationTime = &t
-		in.Status.Phase = tapi.DatabasePhaseCreating
+		in.Status.Phase = api.DatabasePhaseCreating
 		return in
 	})
 	if err != nil {
@@ -67,7 +67,7 @@ func (c *Controller) create(elastic *tapi.Elasticsearch) error {
 			)
 		}
 
-		_, err := kutildb.TryPatchDormantDatabase(c.ExtClient, elastic.ObjectMeta, func(in *tapi.DormantDatabase) *tapi.DormantDatabase {
+		_, err := kutildb.TryPatchDormantDatabase(c.ExtClient, elastic.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.Spec.Resume = true
 			return in
 		})
@@ -137,7 +137,7 @@ func (c *Controller) create(elastic *tapi.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) matchDormantDatabase(elastic *tapi.Elasticsearch) (bool, error) {
+func (c *Controller) matchDormantDatabase(elastic *api.Elasticsearch) (bool, error) {
 	// Check if DormantDatabase exists or not
 	dormantDb, err := c.ExtClient.DormantDatabases(elastic.Namespace).Get(elastic.Name, metav1.GetOptions{})
 	if err != nil {
@@ -166,15 +166,15 @@ func (c *Controller) matchDormantDatabase(elastic *tapi.Elasticsearch) (bool, er
 	}
 
 	// Check DatabaseKind
-	if dormantDb.Labels[tapi.LabelDatabaseKind] != tapi.ResourceKindElasticsearch {
+	if dormantDb.Labels[api.LabelDatabaseKind] != api.ResourceKindElasticsearch {
 		return sendEvent(fmt.Sprintf(`Invalid Elasticsearch: "%v". Exists DormantDatabase "%v" of different Kind`,
 			elastic.Name, dormantDb.Name))
 	}
 
 	// Check InitSpec
-	initSpecAnnotationStr := dormantDb.Annotations[tapi.ElasticsearchInitSpec]
+	initSpecAnnotationStr := dormantDb.Annotations[api.ElasticsearchInitSpec]
 	if initSpecAnnotationStr != "" {
-		var initSpecAnnotation *tapi.InitSpec
+		var initSpecAnnotation *api.InitSpec
 		if err := json.Unmarshal([]byte(initSpecAnnotationStr), &initSpecAnnotation); err != nil {
 			return sendEvent(err.Error())
 		}
@@ -198,7 +198,7 @@ func (c *Controller) matchDormantDatabase(elastic *tapi.Elasticsearch) (bool, er
 	return true, nil
 }
 
-func (c *Controller) ensureService(elastic *tapi.Elasticsearch) error {
+func (c *Controller) ensureService(elastic *api.Elasticsearch) error {
 	// Check if service name exists
 	found, err := c.findService(elastic)
 	if err != nil {
@@ -222,7 +222,7 @@ func (c *Controller) ensureService(elastic *tapi.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
+func (c *Controller) ensureStatefulSet(elastic *api.Elasticsearch) error {
 	found, err := c.findStatefulSet(elastic)
 	if err != nil {
 		return err
@@ -266,8 +266,8 @@ func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
 	}
 
 	if elastic.Spec.Init != nil && elastic.Spec.Init.SnapshotSource != nil {
-		_, err := kutildb.TryPatchElasticsearch(c.ExtClient, elastic.ObjectMeta, func(in *tapi.Elasticsearch) *tapi.Elasticsearch {
-			in.Status.Phase = tapi.DatabasePhaseInitializing
+		_, err := kutildb.TryPatchElasticsearch(c.ExtClient, elastic.ObjectMeta, func(in *api.Elasticsearch) *api.Elasticsearch {
+			in.Status.Phase = api.DatabasePhaseInitializing
 			return in
 		})
 		if err != nil {
@@ -286,8 +286,8 @@ func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
 		}
 	}
 
-	_, err = kutildb.TryPatchElasticsearch(c.ExtClient, elastic.ObjectMeta, func(in *tapi.Elasticsearch) *tapi.Elasticsearch {
-		in.Status.Phase = tapi.DatabasePhaseRunning
+	_, err = kutildb.TryPatchElasticsearch(c.ExtClient, elastic.ObjectMeta, func(in *api.Elasticsearch) *api.Elasticsearch {
+		in.Status.Phase = api.DatabasePhaseRunning
 		return in
 	})
 	if err != nil {
@@ -298,7 +298,7 @@ func (c *Controller) ensureStatefulSet(elastic *tapi.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) ensureBackupScheduler(elastic *tapi.Elasticsearch) {
+func (c *Controller) ensureBackupScheduler(elastic *api.Elasticsearch) {
 	// Setup Schedule backup
 	if elastic.Spec.BackupSchedule != nil {
 		err := c.cronController.ScheduleBackup(elastic, elastic.ObjectMeta, elastic.Spec.BackupSchedule)
@@ -321,7 +321,7 @@ const (
 	durationCheckRestoreJob = time.Minute * 30
 )
 
-func (c *Controller) initialize(elastic *tapi.Elasticsearch) error {
+func (c *Controller) initialize(elastic *api.Elasticsearch) error {
 	snapshotSource := elastic.Spec.Init.SnapshotSource
 	// Event for notification that kubernetes objects are creating
 	c.recorder.Eventf(
@@ -374,7 +374,7 @@ func (c *Controller) initialize(elastic *tapi.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
+func (c *Controller) pause(elastic *api.Elasticsearch) error {
 	if elastic.Annotations != nil {
 		if val, found := elastic.Annotations["kubedb.com/ignore"]; found {
 			//TODO: Add Event Reason "Ignored"
@@ -451,7 +451,7 @@ func (c *Controller) pause(elastic *tapi.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) update(oldElastic, updatedElastic *tapi.Elasticsearch) error {
+func (c *Controller) update(oldElastic, updatedElastic *api.Elasticsearch) error {
 
 	if err := validator.ValidateElastic(c.Client, updatedElastic); err != nil {
 		c.recorder.Event(updatedElastic, core.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
