@@ -3,11 +3,12 @@ package controller
 import (
 	"fmt"
 
+	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
-	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/k8sdb/apimachinery/pkg/docker"
-	"github.com/k8sdb/apimachinery/pkg/storage"
-	amv "github.com/k8sdb/apimachinery/pkg/validator"
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+	"github.com/kubedb/apimachinery/pkg/docker"
+	"github.com/kubedb/apimachinery/pkg/storage"
+	amv "github.com/kubedb/apimachinery/pkg/validator"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,18 +18,17 @@ import (
 const (
 	SnapshotProcess_Backup  = "backup"
 	snapshotType_DumpBackup = "dump-backup"
-	storageSecretMountPath  = "/var/credentials/"
 )
 
 func (c *Controller) ValidateSnapshot(snapshot *api.Snapshot) error {
 	// Database name can't empty
 	databaseName := snapshot.Spec.DatabaseName
 	if databaseName == "" {
-		return fmt.Errorf(`Object 'DatabaseName' is missing in '%v'`, snapshot.Spec)
+		return fmt.Errorf(`object 'DatabaseName' is missing in '%v'`, snapshot.Spec)
 	}
 
 	if err := docker.CheckDockerImageVersion(docker.ImageElasticdump, c.opt.ElasticDumpTag); err != nil {
-		return fmt.Errorf(`Image %v:%v not found`, docker.ImageElasticdump, c.opt.ElasticDumpTag)
+		return fmt.Errorf(`image %v:%v not found`, docker.ImageElasticdump, c.opt.ElasticDumpTag)
 	}
 
 	if _, err := c.ExtClient.Elasticsearchs(snapshot.Namespace).Get(databaseName, metav1.GetOptions{}); err != nil {
@@ -48,7 +48,7 @@ func (c *Controller) GetDatabase(snapshot *api.Snapshot) (runtime.Object, error)
 
 func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) {
 	databaseName := snapshot.Spec.DatabaseName
-	jobName := snapshot.OffshootName()
+	jobName := rand.WithUniqSuffix(snapshot.OffshootName())
 	jobLabel := map[string]string{
 		api.LabelDatabaseName: databaseName,
 		api.LabelJobType:      SnapshotProcess_Backup,
@@ -58,13 +58,13 @@ func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) 
 	if err != nil {
 		return nil, err
 	}
-	elastic, err := c.ExtClient.Elasticsearchs(snapshot.Namespace).Get(databaseName, metav1.GetOptions{})
+	elasticsearch, err := c.ExtClient.Elasticsearchs(snapshot.Namespace).Get(databaseName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	// Get PersistentVolume object for Backup Util pod.
-	persistentVolume, err := c.getVolumeForSnapshot(elastic.Spec.Storage, jobName, snapshot.Namespace)
+	persistentVolume, err := c.getVolumeForSnapshot(elasticsearch.Spec.Storage, jobName, snapshot.Namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +93,23 @@ func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) 
 								fmt.Sprintf(`--folder=%s`, folderName),
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
 							},
+							Env: []core.EnvVar{
+								{
+									Name:  "USERNAME",
+									Value: "readall",
+								},
+								{
+									Name: "PASSWORD",
+									ValueFrom: &core.EnvVarSource{
+										SecretKeyRef: &core.SecretKeySelector{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: elasticsearch.Spec.DatabaseSecret.SecretName,
+											},
+											Key: "READALL_PASSWORD",
+										},
+									},
+								},
+							},
 							Resources: snapshot.Spec.Resources,
 							VolumeMounts: []core.VolumeMount{
 								{
@@ -102,6 +119,11 @@ func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) 
 								{
 									Name:      "osmconfig",
 									MountPath: storage.SecretMountPath,
+									ReadOnly:  true,
+								},
+								{
+									Name:      "certs",
+									MountPath: "/certs",
 									ReadOnly:  true,
 								},
 							},
@@ -116,7 +138,29 @@ func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) 
 							Name: "osmconfig",
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
-									SecretName: snapshot.Name,
+									SecretName: snapshot.OSMSecretName(),
+								},
+							},
+						},
+						{
+							Name: "certs",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: elasticsearch.Spec.CertificateSecret.SecretName,
+									Items: []core.KeyToPath{
+										{
+											Key:  "ca.pem",
+											Path: "ca.pem",
+										},
+										{
+											Key:  "client-key.pem",
+											Path: "client-key.pem",
+										},
+										{
+											Key:  "client.pem",
+											Path: "client.pem",
+										},
+									},
 								},
 							},
 						},
@@ -126,6 +170,7 @@ func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) 
 			},
 		},
 	}
+
 	if snapshot.Spec.SnapshotStorageSpec.Local != nil {
 		job.Spec.Template.Spec.Containers[0].VolumeMounts = append(job.Spec.Template.Spec.Containers[0].VolumeMounts, core.VolumeMount{
 			Name:      "local",

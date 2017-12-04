@@ -3,8 +3,8 @@ package controller
 import (
 	kutilcore "github.com/appscode/kutil/core/v1"
 	kutilrbac "github.com/appscode/kutil/rbac/v1beta1"
-	"github.com/k8sdb/apimachinery/apis/kubedb"
-	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
+	"github.com/kubedb/apimachinery/apis/kubedb"
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	core "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1beta1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -21,7 +21,7 @@ func (c *Controller) deleteRole(elastic *api.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) createRole(elastic *api.Elasticsearch) error {
+func (c *Controller) ensureRole(elastic *api.Elasticsearch) error {
 	// Create new Roles
 	_, err := kutilrbac.CreateOrPatchRole(
 		c.Client,
@@ -59,7 +59,7 @@ func (c *Controller) deleteServiceAccount(elastic *api.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) createServiceAccount(elastic *api.Elasticsearch) error {
+func (c *Controller) ensureServiceAccount(elastic *api.Elasticsearch) error {
 	// Create new ServiceAccount
 	_, err := kutilcore.CreateOrPatchServiceAccount(
 		c.Client,
@@ -84,7 +84,7 @@ func (c *Controller) deleteRoleBinding(elastic *api.Elasticsearch) error {
 	return nil
 }
 
-func (c *Controller) createRoleBinding(elastic *api.Elasticsearch) error {
+func (c *Controller) ensureRoleBinding(elastic *api.Elasticsearch) error {
 	// Ensure new RoleBindings
 	_, err := kutilrbac.CreateOrPatchRoleBinding(
 		c.Client,
@@ -111,28 +111,20 @@ func (c *Controller) createRoleBinding(elastic *api.Elasticsearch) error {
 	return err
 }
 
-func (c *Controller) createRBACStuff(elastic *api.Elasticsearch) error {
-	// Delete Existing Role
-	if err := c.deleteRole(elastic); err != nil {
-		return err
-	}
+func (c *Controller) ensureRBACStuff(elastic *api.Elasticsearch) error {
 	// Create New Role
-	if err := c.createRole(elastic); err != nil {
+	if err := c.ensureRole(elastic); err != nil {
 		return err
 	}
 
 	// Create New ServiceAccount
-	if err := c.createServiceAccount(elastic); err != nil {
-		if !kerr.IsAlreadyExists(err) {
-			return err
-		}
+	if err := c.ensureServiceAccount(elastic); err != nil {
+		return err
 	}
 
 	// Create New RoleBinding
-	if err := c.createRoleBinding(elastic); err != nil {
-		if !kerr.IsAlreadyExists(err) {
-			return err
-		}
+	if err := c.ensureRoleBinding(elastic); err != nil {
+		return err
 	}
 
 	return nil

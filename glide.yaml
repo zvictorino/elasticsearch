@@ -1,4 +1,4 @@
-package: github.com/k8sdb/elasticsearch
+package: github.com/kubedb/elasticsearch
 import:
 - package: github.com/appscode/go
 - package: github.com/appscode/pat
@@ -12,7 +12,7 @@ import:
   repo: https://github.com/appscode/stow.git
   vcs: git
   version: master
-- package: github.com/k8sdb/apimachinery
+- package: github.com/kubedb/apimachinery
   version: master
 - package: github.com/prometheus/common
   version: 3233b24a36715a2fe36d162260457857a56d672d
@@ -23,7 +23,7 @@ import:
 - package: github.com/spf13/pflag
   version: master
 - package: github.com/appscode/kutil
-  version: release-5.0
+  version: master
 - package: k8s.io/api
   version: release-1.8
 - package: k8s.io/apimachinery

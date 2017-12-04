@@ -7,7 +7,7 @@ import (
 
 	v "github.com/appscode/go/version"
 	"github.com/jpillora/go-ogle-analytics"
-	_ "github.com/k8sdb/apimachinery/client/scheme"
+	_ "github.com/kubedb/apimachinery/client/scheme"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -42,7 +42,6 @@ func NewRootCmd(version string) *cobra.Command {
 
 	rootCmd.AddCommand(v.NewCmdVersion())
 	rootCmd.AddCommand(NewCmdRun(version))
-	rootCmd.AddCommand(NewCmdDiscover())
 
 	return rootCmd
 }

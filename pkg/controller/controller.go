@@ -7,11 +7,11 @@ import (
 	"github.com/appscode/go/hold"
 	"github.com/appscode/go/log"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
-	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	cs "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1"
-	kutildb "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1/util"
-	amc "github.com/k8sdb/apimachinery/pkg/controller"
-	"github.com/k8sdb/apimachinery/pkg/eventer"
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+	cs "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1"
+	kutildb "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1/util"
+	amc "github.com/kubedb/apimachinery/pkg/controller"
+	"github.com/kubedb/apimachinery/pkg/eventer"
 	core "k8s.io/api/core/v1"
 	crd_api "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -29,8 +29,6 @@ import (
 type Options struct {
 	// Tag of elasticdump
 	ElasticDumpTag string
-	// Tag of elasticsearch operator
-	DiscoveryTag string
 	// Exporter namespace
 	OperatorNamespace string
 	// Exporter tag
@@ -126,6 +124,7 @@ func (c *Controller) watchElastic() {
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				elastic := obj.(*api.Elasticsearch)
+				kutildb.AssignTypeKind(elastic)
 				if elastic.Status.CreationTime == nil {
 					if err := c.create(elastic); err != nil {
 						log.Errorln(err)
@@ -134,7 +133,9 @@ func (c *Controller) watchElastic() {
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				if err := c.pause(obj.(*api.Elasticsearch)); err != nil {
+				elastic := obj.(*api.Elasticsearch)
+				kutildb.AssignTypeKind(elastic)
+				if err := c.pause(elastic); err != nil {
 					log.Errorln(err)
 				}
 			},
@@ -147,6 +148,8 @@ func (c *Controller) watchElastic() {
 				if !ok {
 					return
 				}
+				kutildb.AssignTypeKind(oldObj)
+				kutildb.AssignTypeKind(newObj)
 				if !reflect.DeepEqual(oldObj.Spec, newObj.Spec) {
 					if err := c.update(oldObj, newObj); err != nil {
 						log.Errorln(err)
@@ -240,29 +243,29 @@ func (c *Controller) ensureCustomResourceDefinition() {
 	}
 }
 
-func (c *Controller) pushFailureEvent(elastic *api.Elasticsearch, reason string) {
+func (c *Controller) pushFailureEvent(elasticsearch *api.Elasticsearch, reason string) {
 	c.recorder.Eventf(
-		elastic.ObjectReference(),
+		elasticsearch.ObjectReference(),
 		core.EventTypeWarning,
 		eventer.EventReasonFailedToStart,
 		`Fail to be ready Elasticsearch: "%v". Reason: %v`,
-		elastic.Name,
+		elasticsearch.Name,
 		reason,
 	)
 
 	var err error
-	if elastic, err = c.ExtClient.Elasticsearchs(elastic.Namespace).Get(elastic.Name, metav1.GetOptions{}); err != nil {
+	if elasticsearch, err = c.ExtClient.Elasticsearchs(elasticsearch.Namespace).Get(elasticsearch.Name, metav1.GetOptions{}); err != nil {
 		log.Errorln(err)
 		return
 	}
 
-	_, err = kutildb.TryPatchElasticsearch(c.ExtClient, elastic.ObjectMeta, func(in *api.Elasticsearch) *api.Elasticsearch {
+	es, err := kutildb.PatchElasticsearch(c.ExtClient, elasticsearch, func(in *api.Elasticsearch) *api.Elasticsearch {
 		in.Status.Phase = api.DatabasePhaseFailed
 		in.Status.Reason = reason
 		return in
 	})
 	if err != nil {
-		c.recorder.Eventf(elastic.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+		c.recorder.Eventf(elasticsearch.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 	}
-
+	*elasticsearch = *es
 }

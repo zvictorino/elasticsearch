@@ -8,14 +8,13 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/runtime"
-	stringz "github.com/appscode/go/strings"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
-	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	cs "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1"
-	amc "github.com/k8sdb/apimachinery/pkg/controller"
-	"github.com/k8sdb/apimachinery/pkg/docker"
-	"github.com/k8sdb/apimachinery/pkg/migrator"
-	"github.com/k8sdb/elasticsearch/pkg/controller"
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+	cs "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1"
+	amc "github.com/kubedb/apimachinery/pkg/controller"
+	"github.com/kubedb/apimachinery/pkg/docker"
+	"github.com/kubedb/apimachinery/pkg/migrator"
+	"github.com/kubedb/elasticsearch/pkg/controller"
 	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -30,8 +29,7 @@ func NewCmdRun(version string) *cobra.Command {
 	)
 
 	opt := controller.Options{
-		ElasticDumpTag:    "canary",
-		DiscoveryTag:      stringz.Val(version, "canary"),
+		ElasticDumpTag:    "5.6.3",
 		OperatorNamespace: namespace(),
 		ExporterTag:       "0.7.1",
 		GoverningService:  "kubedb",

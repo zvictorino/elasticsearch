@@ -4,9 +4,9 @@ import (
 	"os"
 
 	"github.com/appscode/go/types"
-	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/k8sdb/elasticsearch/test/e2e/framework"
-	"github.com/k8sdb/elasticsearch/test/e2e/matcher"
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+	"github.com/kubedb/elasticsearch/test/e2e/framework"
+	"github.com/kubedb/elasticsearch/test/e2e/matcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -24,15 +24,15 @@ var _ = Describe("Elasticsearch", func() {
 	var (
 		err           error
 		f             *framework.Invocation
-		elasticsearch *tapi.Elasticsearch
-		snapshot      *tapi.Snapshot
+		elasticsearch *api.Elasticsearch
+		snapshot      *api.Snapshot
 		secret        *core.Secret
 		skipMessage   string
 	)
 
 	BeforeEach(func() {
 		f = root.Invoke()
-		elasticsearch = f.Elasticsearch()
+		elasticsearch = f.CombinedElasticsearch()
 		snapshot = f.Snapshot()
 		skipMessage = ""
 	})
@@ -55,7 +55,7 @@ var _ = Describe("Elasticsearch", func() {
 		f.EventuallyDormantDatabaseStatus(elasticsearch.ObjectMeta).Should(matcher.HavePaused())
 
 		By("WipeOut elasticsearch")
-		_, err := f.TryPatchDormantDatabase(elasticsearch.ObjectMeta, func(in *tapi.DormantDatabase) *tapi.DormantDatabase {
+		_, err := f.TryPatchDormantDatabase(elasticsearch.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.Spec.WipeOut = true
 			return in
 		})
@@ -68,7 +68,7 @@ var _ = Describe("Elasticsearch", func() {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	var shouldSuccessfullyRunning = func() {
+	var shouldRunSuccessfully = func() {
 		if skipMessage != "" {
 			Skip(skipMessage)
 		}
@@ -85,7 +85,14 @@ var _ = Describe("Elasticsearch", func() {
 		Context("General", func() {
 
 			Context("-", func() {
-				It("should run successfully", shouldSuccessfullyRunning)
+				It("should run successfully", shouldRunSuccessfully)
+			})
+
+			Context("Dedicated elasticsearch", func() {
+				BeforeEach(func() {
+					elasticsearch = f.DedicatedElasticsearch()
+				})
+				It("should run successfully", shouldRunSuccessfully)
 			})
 
 			Context("With PVC", func() {
@@ -102,7 +109,7 @@ var _ = Describe("Elasticsearch", func() {
 						StorageClassName: types.StringP(f.StorageClass),
 					}
 				})
-				It("should run successfully", shouldSuccessfullyRunning)
+				It("should run successfully", shouldRunSuccessfully)
 			})
 		})
 
@@ -126,7 +133,7 @@ var _ = Describe("Elasticsearch", func() {
 				f.EventuallyElasticsearchRunning(elasticsearch.ObjectMeta).Should(BeTrue())
 
 				By("Update elasticsearch to set DoNotPause=false")
-				f.TryPatchElasticsearch(elasticsearch.ObjectMeta, func(in *tapi.Elasticsearch) *tapi.Elasticsearch {
+				f.TryPatchElasticsearch(elasticsearch.ObjectMeta, func(in *api.Elasticsearch) *api.Elasticsearch {
 					in.Spec.DoNotPause = false
 					return in
 				})
@@ -159,7 +166,7 @@ var _ = Describe("Elasticsearch", func() {
 				f.CreateSnapshot(snapshot)
 
 				By("Check for Successed snapshot")
-				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(tapi.SnapshotPhaseSuccessed))
+				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSuccessed))
 
 				if !skipDataCheck {
 					By("Check for snapshot data")
@@ -180,12 +187,10 @@ var _ = Describe("Elasticsearch", func() {
 					skipDataCheck = true
 					secret = f.SecretForLocalBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Local = &tapi.LocalSpec{
+					snapshot.Spec.Local = &api.LocalSpec{
 						Path: "/repo",
 						VolumeSource: core.VolumeSource{
-							HostPath: &core.HostPathVolumeSource{
-								Path: "/repo",
-							},
+							EmptyDir: &core.EmptyDirVolumeSource{},
 						},
 					}
 				})
@@ -197,7 +202,7 @@ var _ = Describe("Elasticsearch", func() {
 				BeforeEach(func() {
 					secret = f.SecretForS3Backend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.S3 = &tapi.S3Spec{
+					snapshot.Spec.S3 = &api.S3Spec{
 						Bucket: os.Getenv(S3_BUCKET_NAME),
 					}
 				})
@@ -209,7 +214,7 @@ var _ = Describe("Elasticsearch", func() {
 				BeforeEach(func() {
 					secret = f.SecretForGCSBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.GCS = &tapi.GCSSpec{
+					snapshot.Spec.GCS = &api.GCSSpec{
 						Bucket: os.Getenv(GCS_BUCKET_NAME),
 					}
 				})
@@ -221,7 +226,7 @@ var _ = Describe("Elasticsearch", func() {
 				BeforeEach(func() {
 					secret = f.SecretForAzureBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Azure = &tapi.AzureSpec{
+					snapshot.Spec.Azure = &api.AzureSpec{
 						Container: os.Getenv(AZURE_CONTAINER_NAME),
 					}
 				})
@@ -233,7 +238,7 @@ var _ = Describe("Elasticsearch", func() {
 				BeforeEach(func() {
 					secret = f.SecretForSwiftBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Swift = &tapi.SwiftSpec{
+					snapshot.Spec.Swift = &api.SwiftSpec{
 						Container: os.Getenv(SWIFT_CONTAINER_NAME),
 					}
 				})
@@ -250,7 +255,7 @@ var _ = Describe("Elasticsearch", func() {
 			BeforeEach(func() {
 				secret = f.SecretForS3Backend()
 				snapshot.Spec.StorageSecretName = secret.Name
-				snapshot.Spec.S3 = &tapi.S3Spec{
+				snapshot.Spec.S3 = &api.S3Spec{
 					Bucket: os.Getenv(S3_BUCKET_NAME),
 				}
 				snapshot.Spec.DatabaseName = elasticsearch.Name
@@ -263,11 +268,26 @@ var _ = Describe("Elasticsearch", func() {
 				By("Create Secret")
 				f.CreateSecret(secret)
 
+				By("Check for Elastic client")
+				f.EventuallyElasticsearchClientReady(elasticsearch.ObjectMeta).Should(BeTrue())
+
+				elasticClient, err := f.GetElasticClient(elasticsearch.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Creating new indices")
+				err = f.CreateIndex(elasticClient, 2)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Checking new indices")
+				f.EventuallyElasticsearchIndicesCount(elasticClient).Should(Equal(3))
+
+				elasticClient.Stop()
+
 				By("Create Snapshot")
 				f.CreateSnapshot(snapshot)
 
 				By("Check for Successed snapshot")
-				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(tapi.SnapshotPhaseSuccessed))
+				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSuccessed))
 
 				By("Check for snapshot data")
 				f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
@@ -276,9 +296,9 @@ var _ = Describe("Elasticsearch", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Create elasticsearch from snapshot")
-				elasticsearch = f.Elasticsearch()
-				elasticsearch.Spec.Init = &tapi.InitSpec{
-					SnapshotSource: &tapi.SnapshotSourceSpec{
+				*elasticsearch = *f.CombinedElasticsearch()
+				elasticsearch.Spec.Init = &api.InitSpec{
+					SnapshotSource: &api.SnapshotSourceSpec{
 						Namespace: snapshot.Namespace,
 						Name:      snapshot.Name,
 					},
@@ -287,9 +307,18 @@ var _ = Describe("Elasticsearch", func() {
 				// Create and wait for running Elasticsearch
 				createAndWaitForRunning()
 
+				By("Check for Elastic client")
+				f.EventuallyElasticsearchClientReady(elasticsearch.ObjectMeta).Should(BeTrue())
+
+				elasticClient, err = f.GetElasticClient(elasticsearch.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Checking indices")
+				f.EventuallyElasticsearchIndicesCount(elasticClient).Should(Equal(3))
+
 				// Delete test resource
 				deleteTestResouce()
-				elasticsearch = oldElasticsearch
+				*elasticsearch = *oldElasticsearch
 				// Delete test resource
 				deleteTestResouce()
 			})
@@ -311,7 +340,7 @@ var _ = Describe("Elasticsearch", func() {
 				By("Wait for elasticsearch to be paused")
 				f.EventuallyDormantDatabaseStatus(elasticsearch.ObjectMeta).Should(matcher.HavePaused())
 
-				_, err = f.TryPatchDormantDatabase(elasticsearch.ObjectMeta, func(in *tapi.DormantDatabase) *tapi.DormantDatabase {
+				_, err = f.TryPatchDormantDatabase(elasticsearch.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 					in.Spec.Resume = true
 					return in
 				})
@@ -328,7 +357,7 @@ var _ = Describe("Elasticsearch", func() {
 
 				if usedInitSpec {
 					Expect(elasticsearch.Spec.Init).Should(BeNil())
-					Expect(elasticsearch.Annotations[tapi.ElasticsearchInitSpec]).ShouldNot(BeEmpty())
+					Expect(elasticsearch.Annotations[api.ElasticsearchInitSpec]).ShouldNot(BeEmpty())
 				}
 
 				// Delete test resource
@@ -336,24 +365,6 @@ var _ = Describe("Elasticsearch", func() {
 			}
 
 			Context("-", func() {
-				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
-			})
-
-			Context("With Init", func() {
-				BeforeEach(func() {
-					usedInitSpec = true
-					elasticsearch.Spec.Init = &tapi.InitSpec{
-						ScriptSource: &tapi.ScriptSourceSpec{
-							ScriptPath: "elasticsearch-init-scripts/run.sh",
-							VolumeSource: core.VolumeSource{
-								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/k8sdb/elasticsearch-init-scripts.git",
-								},
-							},
-						},
-					}
-				})
-
 				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
@@ -379,9 +390,6 @@ var _ = Describe("Elasticsearch", func() {
 					By("Wait for Running elasticsearch")
 					f.EventuallyElasticsearchRunning(elasticsearch.ObjectMeta).Should(BeTrue())
 
-					elasticsearch, err = f.GetElasticsearch(elasticsearch.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
 					// Delete test resource
 					deleteTestResouce()
 				})
@@ -399,16 +407,14 @@ var _ = Describe("Elasticsearch", func() {
 
 			Context("With Startup", func() {
 				BeforeEach(func() {
-					elasticsearch.Spec.BackupSchedule = &tapi.BackupScheduleSpec{
+					elasticsearch.Spec.BackupSchedule = &api.BackupScheduleSpec{
 						CronExpression: "@every 1m",
-						SnapshotStorageSpec: tapi.SnapshotStorageSpec{
+						SnapshotStorageSpec: api.SnapshotStorageSpec{
 							StorageSecretName: secret.Name,
-							Local: &tapi.LocalSpec{
+							Local: &api.LocalSpec{
 								Path: "/repo",
 								VolumeSource: core.VolumeSource{
-									HostPath: &core.HostPathVolumeSource{
-										Path: "/repo",
-									},
+									EmptyDir: &core.EmptyDirVolumeSource{},
 								},
 							},
 						},
@@ -416,11 +422,11 @@ var _ = Describe("Elasticsearch", func() {
 				})
 
 				It("should run schedular successfully", func() {
-					By("Create Secret")
-					f.CreateSecret(secret)
-
 					// Create and wait for running Elasticsearch
 					createAndWaitForRunning()
+
+					By("Create Secret")
+					f.CreateSecret(secret)
 
 					By("Count multiple Snapshot")
 					f.EventuallySnapshotCount(elasticsearch.ObjectMeta).Should(matcher.MoreThan(3))
@@ -438,12 +444,12 @@ var _ = Describe("Elasticsearch", func() {
 					f.CreateSecret(secret)
 
 					By("Update elasticsearch")
-					_, err = f.TryPatchElasticsearch(elasticsearch.ObjectMeta, func(in *tapi.Elasticsearch) *tapi.Elasticsearch {
-						in.Spec.BackupSchedule = &tapi.BackupScheduleSpec{
+					_, err = f.TryPatchElasticsearch(elasticsearch.ObjectMeta, func(in *api.Elasticsearch) *api.Elasticsearch {
+						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 1m",
-							SnapshotStorageSpec: tapi.SnapshotStorageSpec{
+							SnapshotStorageSpec: api.SnapshotStorageSpec{
 								StorageSecretName: secret.Name,
-								Local: &tapi.LocalSpec{
+								Local: &api.LocalSpec{
 									Path: "/repo",
 									VolumeSource: core.VolumeSource{
 										HostPath: &core.HostPathVolumeSource{
