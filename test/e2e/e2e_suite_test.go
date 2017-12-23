@@ -13,8 +13,8 @@ import (
 	cs "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1"
 	amc "github.com/kubedb/apimachinery/pkg/controller"
 	"github.com/kubedb/elasticsearch/pkg/controller"
+	"github.com/kubedb/elasticsearch/pkg/docker"
 	"github.com/kubedb/elasticsearch/test/e2e/framework"
-	"github.com/mitchellh/go-homedir"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
@@ -80,7 +80,9 @@ var _ = BeforeSuite(func() {
 	cronController.StartCron()
 
 	opt := controller.Options{
-		ElasticDumpTag:    "5.6.3",
+		Docker: docker.Docker{
+			Registry: "kubedb",
+		},
 		OperatorNamespace: root.Namespace(),
 		GoverningService:  api.DatabaseNamePrefix,
 	}
