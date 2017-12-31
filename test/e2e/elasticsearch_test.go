@@ -22,19 +22,24 @@ const (
 
 var _ = Describe("Elasticsearch", func() {
 	var (
-		err           error
-		f             *framework.Invocation
-		elasticsearch *api.Elasticsearch
-		snapshot      *api.Snapshot
-		secret        *core.Secret
-		skipMessage   string
+		err                      error
+		f                        *framework.Invocation
+		elasticsearch            *api.Elasticsearch
+		garbageElasticsearch     *api.ElasticsearchList
+		snapshot                 *api.Snapshot
+		secret                   *core.Secret
+		skipMessage              string
+		skipSnapshotDataChecking bool
 	)
 
 	BeforeEach(func() {
 		f = root.Invoke()
 		elasticsearch = f.CombinedElasticsearch()
+		garbageElasticsearch = new(api.ElasticsearchList)
 		snapshot = f.Snapshot()
+		secret = new(core.Secret)
 		skipMessage = ""
+		skipSnapshotDataChecking = true
 	})
 
 	var createAndWaitForRunning = func() {
@@ -46,16 +51,19 @@ var _ = Describe("Elasticsearch", func() {
 		f.EventuallyElasticsearchRunning(elasticsearch.ObjectMeta).Should(BeTrue())
 	}
 
-	var deleteTestResouce = func() {
-		By("Delete elasticsearch")
+	var deleteTestResource = func() {
+		if elasticsearch == nil {
+			Skip("Skipping")
+		}
+		By("Delete elasticsearch: " + elasticsearch.Name)
 		err = f.DeleteElasticsearch(elasticsearch.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for elasticsearch to be paused")
 		f.EventuallyDormantDatabaseStatus(elasticsearch.ObjectMeta).Should(matcher.HavePaused())
 
-		By("WipeOut elasticsearch")
-		_, err := f.TryPatchDormantDatabase(elasticsearch.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+		By("WipeOut elasticsearch: " + elasticsearch.Name)
+		_, err := f.PatchDormantDatabase(elasticsearch.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.Spec.WipeOut = true
 			return in
 		})
@@ -68,6 +76,26 @@ var _ = Describe("Elasticsearch", func() {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
+	AfterEach(func() {
+		// Delete test resource
+		deleteTestResource()
+
+		for _, es := range garbageElasticsearch.Items {
+			*elasticsearch = es
+			// Delete test resource
+			deleteTestResource()
+		}
+
+		if !skipSnapshotDataChecking {
+			By("Check for snapshot data")
+			f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
+		}
+
+		if secret != nil {
+			f.DeleteSecret(secret.ObjectMeta)
+		}
+	})
+
 	var shouldRunSuccessfully = func() {
 		if skipMessage != "" {
 			Skip(skipMessage)
@@ -75,9 +103,6 @@ var _ = Describe("Elasticsearch", func() {
 
 		// Create Elasticsearch
 		createAndWaitForRunning()
-
-		// Delete test resource
-		deleteTestResouce()
 	}
 
 	Describe("Test", func() {
@@ -108,12 +133,62 @@ var _ = Describe("Elasticsearch", func() {
 						},
 						StorageClassName: types.StringP(f.StorageClass),
 					}
+
 				})
-				It("should run successfully", shouldRunSuccessfully)
+				It("should run successfully", func() {
+					if skipMessage != "" {
+						Skip(skipMessage)
+					}
+					// Create Elasticsearch
+					createAndWaitForRunning()
+
+					By("Check for Elastic client")
+					f.EventuallyElasticsearchClientReady(elasticsearch.ObjectMeta).Should(BeTrue())
+
+					elasticClient, err := f.GetElasticClient(elasticsearch.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Creating new indices")
+					err = f.CreateIndex(elasticClient, 2)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Checking new indices")
+					f.EventuallyElasticsearchIndicesCount(elasticClient).Should(Equal(3))
+
+					elasticClient.Stop()
+
+					By("Delete postgres")
+					err = f.DeleteElasticsearch(elasticsearch.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for elasticsearch to be paused")
+					f.EventuallyDormantDatabaseStatus(elasticsearch.ObjectMeta).Should(matcher.HavePaused())
+
+					_, err = f.PatchDormantDatabase(elasticsearch.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+						in.Spec.Resume = true
+						return in
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for DormantDatabase to be deleted")
+					f.EventuallyDormantDatabase(elasticsearch.ObjectMeta).Should(BeFalse())
+
+					By("Wait for Running elasticsearch")
+					f.EventuallyElasticsearchRunning(elasticsearch.ObjectMeta).Should(BeTrue())
+
+					By("Check for Elastic client")
+					f.EventuallyElasticsearchClientReady(elasticsearch.ObjectMeta).Should(BeTrue())
+
+					elasticClient, err = f.GetElasticClient(elasticsearch.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Checking new indices")
+					f.EventuallyElasticsearchIndicesCount(elasticClient).Should(Equal(3))
+				})
 			})
 		})
 
-		Context("DoNotPause", func() {
+		XContext("DoNotPause", func() {
 			BeforeEach(func() {
 				elasticsearch.Spec.DoNotPause = true
 			})
@@ -137,21 +212,12 @@ var _ = Describe("Elasticsearch", func() {
 					in.Spec.DoNotPause = false
 					return in
 				})
-
-				// Delete test resource
-				deleteTestResouce()
 			})
 		})
 
 		Context("Snapshot", func() {
-			var skipDataCheck bool
-
-			AfterEach(func() {
-				f.DeleteSecret(secret.ObjectMeta)
-			})
-
 			BeforeEach(func() {
-				skipDataCheck = false
+				skipSnapshotDataChecking = false
 				snapshot.Spec.DatabaseName = elasticsearch.Name
 			})
 
@@ -168,23 +234,15 @@ var _ = Describe("Elasticsearch", func() {
 				By("Check for Successed snapshot")
 				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSuccessed))
 
-				if !skipDataCheck {
+				if !skipSnapshotDataChecking {
 					By("Check for snapshot data")
 					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-				}
-
-				// Delete test resource
-				deleteTestResouce()
-
-				if !skipDataCheck {
-					By("Check for snapshot data")
-					f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
 				}
 			}
 
 			Context("In Local", func() {
 				BeforeEach(func() {
-					skipDataCheck = true
+					skipSnapshotDataChecking = true
 					secret = f.SecretForLocalBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
 					snapshot.Spec.Local = &api.LocalSpec{
@@ -210,7 +268,7 @@ var _ = Describe("Elasticsearch", func() {
 				It("should take Snapshot successfully", shouldTakeSnapshot)
 			})
 
-			Context("In GCS", func() {
+			XContext("In GCS", func() {
 				BeforeEach(func() {
 					secret = f.SecretForGCSBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -222,7 +280,7 @@ var _ = Describe("Elasticsearch", func() {
 				It("should take Snapshot successfully", shouldTakeSnapshot)
 			})
 
-			Context("In Azure", func() {
+			XContext("In Azure", func() {
 				BeforeEach(func() {
 					secret = f.SecretForAzureBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -234,7 +292,7 @@ var _ = Describe("Elasticsearch", func() {
 				It("should take Snapshot successfully", shouldTakeSnapshot)
 			})
 
-			Context("In Swift", func() {
+			XContext("In Swift", func() {
 				BeforeEach(func() {
 					secret = f.SecretForSwiftBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -248,11 +306,8 @@ var _ = Describe("Elasticsearch", func() {
 		})
 
 		Context("Initialize", func() {
-			AfterEach(func() {
-				f.DeleteSecret(secret.ObjectMeta)
-			})
-
 			BeforeEach(func() {
+				skipSnapshotDataChecking = false
 				secret = f.SecretForS3Backend()
 				snapshot.Spec.StorageSecretName = secret.Name
 				snapshot.Spec.S3 = &api.S3Spec{
@@ -295,6 +350,8 @@ var _ = Describe("Elasticsearch", func() {
 				oldElasticsearch, err := f.GetElasticsearch(elasticsearch.ObjectMeta)
 				Expect(err).NotTo(HaveOccurred())
 
+				garbageElasticsearch.Items = append(garbageElasticsearch.Items, *oldElasticsearch)
+
 				By("Create elasticsearch from snapshot")
 				*elasticsearch = *f.CombinedElasticsearch()
 				elasticsearch.Spec.Init = &api.InitSpec{
@@ -315,12 +372,6 @@ var _ = Describe("Elasticsearch", func() {
 
 				By("Checking indices")
 				f.EventuallyElasticsearchIndicesCount(elasticClient).Should(Equal(3))
-
-				// Delete test resource
-				deleteTestResouce()
-				*elasticsearch = *oldElasticsearch
-				// Delete test resource
-				deleteTestResouce()
 			})
 		})
 
@@ -340,7 +391,7 @@ var _ = Describe("Elasticsearch", func() {
 				By("Wait for elasticsearch to be paused")
 				f.EventuallyDormantDatabaseStatus(elasticsearch.ObjectMeta).Should(matcher.HavePaused())
 
-				_, err = f.TryPatchDormantDatabase(elasticsearch.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+				_, err = f.PatchDormantDatabase(elasticsearch.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 					in.Spec.Resume = true
 					return in
 				})
@@ -359,9 +410,6 @@ var _ = Describe("Elasticsearch", func() {
 					Expect(elasticsearch.Spec.Init).Should(BeNil())
 					Expect(elasticsearch.Annotations[api.ElasticsearchInitSpec]).ShouldNot(BeEmpty())
 				}
-
-				// Delete test resource
-				deleteTestResouce()
 			}
 
 			Context("-", func() {
@@ -389,9 +437,6 @@ var _ = Describe("Elasticsearch", func() {
 
 					By("Wait for Running elasticsearch")
 					f.EventuallyElasticsearchRunning(elasticsearch.ObjectMeta).Should(BeTrue())
-
-					// Delete test resource
-					deleteTestResouce()
 				})
 			})
 		})
@@ -430,8 +475,6 @@ var _ = Describe("Elasticsearch", func() {
 
 					By("Count multiple Snapshot")
 					f.EventuallySnapshotCount(elasticsearch.ObjectMeta).Should(matcher.MoreThan(3))
-
-					deleteTestResouce()
 				})
 			})
 
@@ -464,8 +507,6 @@ var _ = Describe("Elasticsearch", func() {
 
 					By("Count multiple Snapshot")
 					f.EventuallySnapshotCount(elasticsearch.ObjectMeta).Should(matcher.MoreThan(3))
-
-					deleteTestResouce()
 				})
 			})
 		})

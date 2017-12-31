@@ -5,6 +5,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
+	"github.com/appscode/kutil"
 	app_util "github.com/appscode/kutil/apps/v1beta1"
 	core_util "github.com/appscode/kutil/core/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -17,19 +18,19 @@ import (
 
 func (c *Controller) ensureStatefulSet(
 	elasticsearch *api.Elasticsearch,
-	statefulsetName string,
+	statefulSetName string,
 	labels map[string]string,
 	replicas int32,
 	envList []core.EnvVar,
 	isClient bool,
-) error {
+) (kutil.VerbType, error) {
 
-	if err := c.checkStatefulSet(elasticsearch, statefulsetName); err != nil {
-		return err
+	if err := c.checkStatefulSet(elasticsearch, statefulSetName); err != nil {
+		return kutil.VerbUnchanged, err
 	}
 
-	statefulsetMeta := metav1.ObjectMeta{
-		Name:      statefulsetName,
+	statefulSetMeta := metav1.ObjectMeta{
+		Name:      statefulSetName,
 		Namespace: elasticsearch.Namespace,
 	}
 
@@ -37,7 +38,7 @@ func (c *Controller) ensureStatefulSet(
 		replicas = 1
 	}
 
-	statefulset, _, err := app_util.CreateOrPatchStatefulSet(c.Client, statefulsetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
+	statefulSet, vt, err := app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
 		in = upsertObjectMeta(in, labels, elasticsearch.StatefulSetAnnotations())
 
 		in.Spec.Replicas = types.Int32P(replicas)
@@ -76,30 +77,32 @@ func (c *Controller) ensureStatefulSet(
 	})
 
 	if err != nil {
-		return err
+		return kutil.VerbUnchanged, err
 	}
 
-	// Check StatefulSet Pod status
-	if err := c.CheckStatefulSetPodStatus(statefulset); err != nil {
+	if vt == kutil.VerbCreated || vt == kutil.VerbPatched {
+		// Check StatefulSet Pod status
+		if err := c.CheckStatefulSetPodStatus(statefulSet); err != nil {
+			c.recorder.Eventf(
+				elasticsearch.ObjectReference(),
+				core.EventTypeWarning,
+				eventer.EventReasonFailedToStart,
+				`Failed to be running after StatefulSet %v. Reason: %v`,
+				vt,
+				err,
+			)
+			return kutil.VerbUnchanged, err
+		}
+
 		c.recorder.Eventf(
 			elasticsearch.ObjectReference(),
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToStart,
-			"Failed to create StatefulSet. Reason: %v",
-			err,
-		)
-
-		return err
-	} else {
-		c.recorder.Event(
-			elasticsearch.ObjectReference(),
 			core.EventTypeNormal,
-			eventer.EventReasonSuccessfulCreate,
-			"Successfully created StatefulSet",
+			eventer.EventReasonSuccessful,
+			"Successfully %v StatefulSet",
+			vt,
 		)
 	}
-
-	return nil
+	return vt, nil
 }
 
 func (c *Controller) CheckStatefulSetPodStatus(statefulSet *apps.StatefulSet) error {
@@ -115,12 +118,12 @@ func (c *Controller) CheckStatefulSetPodStatus(statefulSet *apps.StatefulSet) er
 	return nil
 }
 
-func (c *Controller) ensureClientNode(elasticsearch *api.Elasticsearch) error {
-	statefulsetName := elasticsearch.OffshootName()
+func (c *Controller) ensureClientNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
+	statefulSetName := elasticsearch.OffshootName()
 	clientNode := elasticsearch.Spec.Topology.Client
 
 	if clientNode.Prefix != "" {
-		statefulsetName = fmt.Sprintf("%v-%v", clientNode.Prefix, statefulsetName)
+		statefulSetName = fmt.Sprintf("%v-%v", clientNode.Prefix, statefulSetName)
 	}
 
 	labels := elasticsearch.StatefulSetLabels()
@@ -141,15 +144,15 @@ func (c *Controller) ensureClientNode(elasticsearch *api.Elasticsearch) error {
 		},
 	}
 
-	return c.ensureStatefulSet(elasticsearch, statefulsetName, labels, clientNode.Replicas, envList, true)
+	return c.ensureStatefulSet(elasticsearch, statefulSetName, labels, clientNode.Replicas, envList, true)
 }
 
-func (c *Controller) ensureMasterNode(elasticsearch *api.Elasticsearch) error {
-	statefulsetName := elasticsearch.OffshootName()
+func (c *Controller) ensureMasterNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
+	statefulSetName := elasticsearch.OffshootName()
 	masterNode := elasticsearch.Spec.Topology.Master
 
 	if masterNode.Prefix != "" {
-		statefulsetName = fmt.Sprintf("%v-%v", masterNode.Prefix, statefulsetName)
+		statefulSetName = fmt.Sprintf("%v-%v", masterNode.Prefix, statefulSetName)
 	}
 
 	labels := elasticsearch.StatefulSetLabels()
@@ -179,15 +182,15 @@ func (c *Controller) ensureMasterNode(elasticsearch *api.Elasticsearch) error {
 		},
 	}
 
-	return c.ensureStatefulSet(elasticsearch, statefulsetName, labels, masterNode.Replicas, envList, false)
+	return c.ensureStatefulSet(elasticsearch, statefulSetName, labels, masterNode.Replicas, envList, false)
 }
 
-func (c *Controller) ensureDataNode(elasticsearch *api.Elasticsearch) error {
-	statefulsetName := elasticsearch.OffshootName()
+func (c *Controller) ensureDataNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
+	statefulSetName := elasticsearch.OffshootName()
 	dataNode := elasticsearch.Spec.Topology.Data
 
 	if dataNode.Prefix != "" {
-		statefulsetName = fmt.Sprintf("%v-%v", dataNode.Prefix, statefulsetName)
+		statefulSetName = fmt.Sprintf("%v-%v", dataNode.Prefix, statefulSetName)
 	}
 
 	labels := elasticsearch.StatefulSetLabels()
@@ -208,11 +211,11 @@ func (c *Controller) ensureDataNode(elasticsearch *api.Elasticsearch) error {
 		},
 	}
 
-	return c.ensureStatefulSet(elasticsearch, statefulsetName, labels, dataNode.Replicas, envList, false)
+	return c.ensureStatefulSet(elasticsearch, statefulSetName, labels, dataNode.Replicas, envList, false)
 }
 
-func (c *Controller) ensureCombinedNode(elasticsearch *api.Elasticsearch) error {
-	statefulsetName := elasticsearch.OffshootName()
+func (c *Controller) ensureCombinedNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
+	statefulSetName := elasticsearch.OffshootName()
 	labels := elasticsearch.StatefulSetLabels()
 	labels[NodeRoleClient] = "set"
 	labels[NodeRoleMaster] = "set"
@@ -234,7 +237,7 @@ func (c *Controller) ensureCombinedNode(elasticsearch *api.Elasticsearch) error 
 		},
 	}
 
-	return c.ensureStatefulSet(elasticsearch, statefulsetName, labels, replicas, envList, true)
+	return c.ensureStatefulSet(elasticsearch, statefulSetName, labels, replicas, envList, true)
 }
 
 func (c *Controller) checkStatefulSet(elasticsearch *api.Elasticsearch, name string) error {
@@ -398,7 +401,7 @@ func (c *Controller) upsertMonitoringContainer(statefulSet *apps.StatefulSet, el
 	return statefulSet
 }
 
-func upsertCertificate(statefulset *apps.StatefulSet, secretName string, isClientNode bool) *apps.StatefulSet {
+func upsertCertificate(statefulSet *apps.StatefulSet, secretName string, isClientNode bool) *apps.StatefulSet {
 	addCertVolume := func() *core.SecretVolumeSource {
 		svs := &core.SecretVolumeSource{
 			SecretName: secretName,
@@ -423,7 +426,7 @@ func upsertCertificate(statefulset *apps.StatefulSet, secretName string, isClien
 		return svs
 	}
 
-	for i, container := range statefulset.Spec.Template.Spec.Containers {
+	for i, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == api.ResourceNameElasticsearch {
 			volumeMount := core.VolumeMount{
 				Name:      "certs",
@@ -431,7 +434,7 @@ func upsertCertificate(statefulset *apps.StatefulSet, secretName string, isClien
 			}
 			volumeMounts := container.VolumeMounts
 			volumeMounts = core_util.UpsertVolumeMount(volumeMounts, volumeMount)
-			statefulset.Spec.Template.Spec.Containers[i].VolumeMounts = volumeMounts
+			statefulSet.Spec.Template.Spec.Containers[i].VolumeMounts = volumeMounts
 
 			volume := core.Volume{
 				Name: "certs",
@@ -439,17 +442,17 @@ func upsertCertificate(statefulset *apps.StatefulSet, secretName string, isClien
 					Secret: addCertVolume(),
 				},
 			}
-			volumes := statefulset.Spec.Template.Spec.Volumes
+			volumes := statefulSet.Spec.Template.Spec.Volumes
 			volumes = core_util.UpsertVolume(volumes, volume)
-			statefulset.Spec.Template.Spec.Volumes = volumes
-			return statefulset
+			statefulSet.Spec.Template.Spec.Volumes = volumes
+			return statefulSet
 		}
 	}
-	return statefulset
+	return statefulSet
 }
 
-func upsertDatabaseSecret(statefulset *apps.StatefulSet, secretName string) *apps.StatefulSet {
-	for i, container := range statefulset.Spec.Template.Spec.Containers {
+func upsertDatabaseSecret(statefulSet *apps.StatefulSet, secretName string) *apps.StatefulSet {
+	for i, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == api.ResourceNameElasticsearch {
 			volumeMount := core.VolumeMount{
 				Name:      "sgconfig",
@@ -457,7 +460,7 @@ func upsertDatabaseSecret(statefulset *apps.StatefulSet, secretName string) *app
 			}
 			volumeMounts := container.VolumeMounts
 			volumeMounts = core_util.UpsertVolumeMount(volumeMounts, volumeMount)
-			statefulset.Spec.Template.Spec.Containers[i].VolumeMounts = volumeMounts
+			statefulSet.Spec.Template.Spec.Containers[i].VolumeMounts = volumeMounts
 
 			volume := core.Volume{
 				Name: "sgconfig",
@@ -467,13 +470,13 @@ func upsertDatabaseSecret(statefulset *apps.StatefulSet, secretName string) *app
 					},
 				},
 			}
-			volumes := statefulset.Spec.Template.Spec.Volumes
+			volumes := statefulSet.Spec.Template.Spec.Volumes
 			volumes = core_util.UpsertVolume(volumes, volume)
-			statefulset.Spec.Template.Spec.Volumes = volumes
-			return statefulset
+			statefulSet.Spec.Template.Spec.Volumes = volumes
+			return statefulSet
 		}
 	}
-	return statefulset
+	return statefulSet
 }
 
 func upsertDataVolume(statefulSet *apps.StatefulSet, elasticsearch *api.Elasticsearch) *apps.StatefulSet {
@@ -512,15 +515,6 @@ func upsertDataVolume(statefulSet *apps.StatefulSet, elasticsearch *api.Elastics
 				statefulSet.Spec.VolumeClaimTemplates = volumeClaims
 			} else {
 				// Attach Empty directory
-				statefulSet.Spec.Template.Spec.Volumes = append(
-					statefulSet.Spec.Template.Spec.Volumes,
-					core.Volume{
-						Name: "data",
-						VolumeSource: core.VolumeSource{
-							EmptyDir: &core.EmptyDirVolumeSource{},
-						},
-					},
-				)
 				volume := core.Volume{
 					Name: "data",
 					VolumeSource: core.VolumeSource{

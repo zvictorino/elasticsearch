@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/appscode/go/homedir"
 	logs "github.com/appscode/go/log/golog"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1"
-	amc "github.com/kubedb/apimachinery/pkg/controller"
+	snapc "github.com/kubedb/apimachinery/pkg/controller/snapshot"
 	"github.com/kubedb/elasticsearch/pkg/controller"
 	"github.com/kubedb/elasticsearch/pkg/docker"
 	"github.com/kubedb/elasticsearch/test/e2e/framework"
@@ -49,8 +50,7 @@ func TestE2e(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 
-	userHome, err := homedir.Dir()
-	Expect(err).NotTo(HaveOccurred())
+	userHome := homedir.HomeDir()
 
 	// Kubernetes config
 	kubeconfigPath := filepath.Join(userHome, ".kube/config")
@@ -75,7 +75,7 @@ var _ = BeforeSuite(func() {
 	err = root.CreateNamespace()
 	Expect(err).NotTo(HaveOccurred())
 
-	cronController := amc.NewCronController(kubeClient, extClient)
+	cronController := snapc.NewCronController(kubeClient, extClient)
 	// Start Cron
 	cronController.StartCron()
 
@@ -85,6 +85,7 @@ var _ = BeforeSuite(func() {
 		},
 		OperatorNamespace: root.Namespace(),
 		GoverningService:  api.DatabaseNamePrefix,
+		MaxNumRequeues:    5,
 	}
 
 	// Controller
@@ -94,10 +95,12 @@ var _ = BeforeSuite(func() {
 		log.Fatalln(err)
 	}
 	ctrl.Run()
-	root.EventuallyTPR().Should(Succeed())
 })
 
 var _ = AfterSuite(func() {
+	root.CleanElasticsearch()
+	root.CleanDormantDatabase()
+	root.CleanSnapshot()
 	err := root.DeleteNamespace()
 	Expect(err).NotTo(HaveOccurred())
 	By("Deleted namespace")
