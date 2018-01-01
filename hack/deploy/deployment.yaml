@@ -20,6 +20,4 @@ spec:
         image: kubedb/es-operator:0.1.0
         args:
         - run
-        - --operator=0.1.0
-        - --elasticdump=2.4.2
         - --v=4
