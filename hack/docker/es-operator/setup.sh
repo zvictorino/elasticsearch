@@ -45,11 +45,11 @@ build_docker() {
 FROM alpine
 
 RUN set -x \
-  && apk add --update --no-cache ca-certificates
+  && apk add --update --no-cache ca-certificates \
+  && apk add --update openjdk8-jre-base openssl
 
 COPY es-operator /usr/bin/es-operator
 
-USER nobody:nobody
 ENTRYPOINT ["es-operator"]
 EOL
     local cmd="docker build -t $DOCKER_REGISTRY/$IMG:$TAG ."
