@@ -40,6 +40,8 @@ type Options struct {
 	EnableRbac bool
 	//Max number requests for retries
 	MaxNumRequeues int
+	// Analytics Client ID
+	AnalyticsClientID string
 }
 
 type Controller struct {
@@ -122,7 +124,7 @@ func (c *Controller) watchElasticsearch() {
 	stop := make(chan struct{})
 	defer close(stop)
 
-	c.runWatcher(1, stop)
+	c.runWatcher(5, stop)
 	select {}
 }
 

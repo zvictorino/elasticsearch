@@ -77,6 +77,10 @@ func (c *Controller) createRestoreJob(elasticsearch *api.Elasticsearch, snapshot
 										},
 									},
 								},
+								{
+									Name:  "APPSCODE_ANALYTICS_CLIENT_ID",
+									Value: c.opt.AnalyticsClientID,
+								},
 							},
 							Resources: snapshot.Spec.Resources,
 							VolumeMounts: []core.VolumeMount{
@@ -216,6 +220,10 @@ func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) 
 											Key: "READALL_PASSWORD",
 										},
 									},
+								},
+								{
+									Name:  "APPSCODE_ANALYTICS_CLIENT_ID",
+									Value: c.opt.AnalyticsClientID,
 								},
 							},
 							Resources: snapshot.Spec.Resources,
