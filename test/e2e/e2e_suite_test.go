@@ -87,6 +87,7 @@ var _ = BeforeSuite(func() {
 		OperatorNamespace: root.Namespace(),
 		GoverningService:  api.DatabaseNamePrefix,
 		MaxNumRequeues:    5,
+		AnalyticsClientID: "$kubedb$elasticsearch$e2e",
 	}
 
 	// Controller
