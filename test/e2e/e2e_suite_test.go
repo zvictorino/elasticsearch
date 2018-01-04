@@ -24,7 +24,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var storageClass, registry string
+var (
+	storageClass string
+	registry     string
+)
 
 func init() {
 	flag.StringVar(&storageClass, "storageclass", "", "Kubernetes StorageClass name")
