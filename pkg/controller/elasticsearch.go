@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
+	mon_api "github.com/appscode/kube-mon/api"
 	"github.com/appscode/kutil"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	kutildb "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1/util"
@@ -103,7 +104,8 @@ func (c *Controller) create(elasticsearch *api.Elasticsearch) error {
 		)
 	}
 
-	if vt2 == kutil.VerbCreated && elasticsearch.Spec.Init != nil && elasticsearch.Spec.Init.SnapshotSource != nil {
+	initSpec := elasticsearch.Annotations[api.GenericInitSpec]
+	if initSpec == "" && elasticsearch.Spec.Init != nil && elasticsearch.Spec.Init.SnapshotSource != nil {
 		es, _, err := kutildb.PatchElasticsearch(c.ExtClient, elasticsearch, func(in *api.Elasticsearch) *api.Elasticsearch {
 			in.Status.Phase = api.DatabasePhaseInitializing
 			return in
@@ -135,6 +137,27 @@ func (c *Controller) create(elasticsearch *api.Elasticsearch) error {
 		elasticsearch.Status = es.Status
 	}
 
+	if elasticsearch.Spec.Init != nil {
+		es, _, err := kutildb.PatchElasticsearch(c.ExtClient, elasticsearch, func(in *api.Elasticsearch) *api.Elasticsearch {
+			if in.Annotations == nil {
+				in.Annotations = make(map[string]string)
+			}
+
+			initSpec, err := json.Marshal(elasticsearch.Spec.Init)
+			if err == nil {
+				in.Annotations[api.GenericInitSpec] = string(initSpec)
+			}
+			in.Spec.Init = nil
+			return in
+		})
+		if err != nil {
+			c.recorder.Eventf(elasticsearch.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+			return err
+		}
+		elasticsearch.Annotations = es.Annotations
+		*elasticsearch.Spec.Init = *es.Spec.Init
+	}
+
 	// Ensure Schedule backup
 	c.ensureBackupScheduler(elasticsearch)
 
@@ -152,9 +175,14 @@ func (c *Controller) create(elasticsearch *api.Elasticsearch) error {
 	return nil
 }
 
+// Assign Default Monitoring Port if MonitoringSpec Exists
+// and the AgentVendor is Prometheus.
 func (c *Controller) setMonitoringPort(elasticsearch *api.Elasticsearch) error {
 	if elasticsearch.Spec.Monitor != nil &&
-		elasticsearch.Spec.Monitor.Prometheus != nil {
+		elasticsearch.GetMonitoringVendor() == mon_api.VendorPrometheus {
+		if elasticsearch.Spec.Monitor.Prometheus == nil {
+			elasticsearch.Spec.Monitor.Prometheus = &mon_api.PrometheusSpec{}
+		}
 		if elasticsearch.Spec.Monitor.Prometheus.Port == 0 {
 			es, _, err := kutildb.PatchElasticsearch(c.ExtClient, elasticsearch, func(in *api.Elasticsearch) *api.Elasticsearch {
 				in.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
@@ -170,7 +198,7 @@ func (c *Controller) setMonitoringPort(elasticsearch *api.Elasticsearch) error {
 				)
 				return err
 			}
-			elasticsearch.Spec.Monitor = es.Spec.Monitor
+			elasticsearch.Spec = es.Spec
 		}
 	}
 	return nil
@@ -297,7 +325,6 @@ func (c *Controller) ensureElasticsearchNode(elasticsearch *api.Elasticsearch) (
 		return in
 	})
 	if err != nil {
-		c.recorder.Eventf(elasticsearch.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 		return kutil.VerbUnchanged, err
 	}
 	elasticsearch.Status = es.Status
@@ -390,31 +417,6 @@ func (c *Controller) pause(elasticsearch *api.Elasticsearch) error {
 
 	c.recorder.Event(elasticsearch.ObjectReference(), core.EventTypeNormal, eventer.EventReasonPausing, "Pausing Elasticsearch")
 
-	/*
-		if elasticsearch.Spec.DoNotPause {
-			c.recorder.Eventf(
-				elasticsearch.ObjectReference(),
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToPause,
-				`Elasticsearch "%v" is locked.`,
-				elasticsearch.Name,
-			)
-
-			if err := c.reCreateElastic(elasticsearch); err != nil {
-				c.recorder.Eventf(
-					elasticsearch.ObjectReference(),
-					core.EventTypeWarning,
-					eventer.EventReasonFailedToCreate,
-					`Failed to recreate Elasticsearch: "%v". Reason: %v`,
-					elasticsearch.Name,
-					err,
-				)
-				return err
-			}
-			return nil
-		}
-	*/
-
 	if _, err := c.createDormantDatabase(elasticsearch); err != nil {
 		c.recorder.Eventf(
 			elasticsearch.ObjectReference(),
@@ -451,24 +453,3 @@ func (c *Controller) pause(elasticsearch *api.Elasticsearch) error {
 	}
 	return nil
 }
-
-/*
-func (c *Controller) reCreateElastic(elasticsearch *api.Elasticsearch) error {
-	es := &api.Elasticsearch{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        elasticsearch.Name,
-			Namespace:   elasticsearch.Namespace,
-			Labels:      elasticsearch.Labels,
-			Annotations: elasticsearch.Annotations,
-		},
-		Spec:   elasticsearch.Spec,
-		Status: elasticsearch.Status,
-	}
-
-	if _, err := c.ExtClient.Elasticsearchs(es.Namespace).Create(es); err != nil {
-		return err
-	}
-
-	return nil
-}
-*/

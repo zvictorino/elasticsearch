@@ -5,6 +5,7 @@ import (
 
 	"github.com/appscode/go/hold"
 	"github.com/appscode/go/log"
+	"github.com/appscode/go/log/golog"
 	apiext_util "github.com/appscode/kutil/apiextensions/v1beta1"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -23,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -38,12 +40,18 @@ type Options struct {
 	Address string
 	//Max number requests for retries
 	MaxNumRequeues int
+	// Enable Analytics
+	EnableAnalytics bool
 	// Analytics Client ID
 	AnalyticsClientID string
+	// Logger Options
+	LoggerOptions golog.Options
 }
 
 type Controller struct {
 	*amc.Controller
+	// Rest config
+	config *restclient.Config
 	// Prometheus client
 	promClient pcm.MonitoringV1Interface
 	// Cron Controller
@@ -65,6 +73,7 @@ var _ snapc.Snapshotter = &Controller{}
 var _ drmnc.Deleter = &Controller{}
 
 func New(
+	config *restclient.Config,
 	client kubernetes.Interface,
 	apiExtKubeClient crd_cs.ApiextensionsV1beta1Interface,
 	extClient cs.KubedbV1alpha1Interface,
@@ -78,6 +87,7 @@ func New(
 			ExtClient:        extClient,
 			ApiExtKubeClient: apiExtKubeClient,
 		},
+		config:         config,
 		promClient:     promClient,
 		cronController: cronController,
 		recorder:       eventer.NewEventRecorder(client, "Elasticsearch operator"),

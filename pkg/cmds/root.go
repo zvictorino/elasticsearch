@@ -5,26 +5,21 @@ import (
 	"log"
 	"strings"
 
+	"github.com/appscode/go/log/golog"
+	stringz "github.com/appscode/go/strings"
 	v "github.com/appscode/go/version"
-	"github.com/appscode/kutil/tools/analytics"
 	"github.com/jpillora/go-ogle-analytics"
 	"github.com/kubedb/apimachinery/client/scheme"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 )
 
 const (
 	gaTrackingCode = "UA-62096468-20"
 )
 
-var (
-	analyticsClientID = analytics.ClientID()
-)
-
 func NewRootCmd(version string) *cobra.Command {
-	var (
-		enableAnalytics = true
-	)
 	var rootCmd = &cobra.Command{
 		Use:               "es-operator",
 		DisableAutoGenTag: true,
@@ -32,23 +27,25 @@ func NewRootCmd(version string) *cobra.Command {
 			c.Flags().VisitAll(func(flag *pflag.Flag) {
 				log.Printf("FLAG: --%s=%q", flag.Name, flag.Value)
 			})
-			if enableAnalytics && gaTrackingCode != "" {
+			if opt.EnableAnalytics && gaTrackingCode != "" {
 				if client, err := ga.NewClient(gaTrackingCode); err == nil {
-					client.ClientID(analyticsClientID)
+					client.ClientID(opt.AnalyticsClientID)
 					parts := strings.Split(c.CommandPath(), " ")
 					client.Send(ga.NewEvent(parts[0], strings.Join(parts[1:], "/")).Label(version))
 				}
 			}
-			scheme.AddToScheme(scheme.Scheme)
+			scheme.AddToScheme(clientsetscheme.Scheme)
+			opt.LoggerOptions = golog.ParseFlags(c.Flags())
+			opt.Docker.ExporterTag = stringz.Val(version, "canary")
 		},
 	}
 	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
 	flag.CommandLine.Parse([]string{})
-	rootCmd.PersistentFlags().BoolVar(&enableAnalytics, "analytics", enableAnalytics, "Send analytical events to Google Analytics")
+	rootCmd.PersistentFlags().BoolVar(&opt.EnableAnalytics, "analytics", opt.EnableAnalytics, "Send analytical events to Google Analytics")
 
 	rootCmd.AddCommand(v.NewCmdVersion())
-	rootCmd.AddCommand(NewCmdRun(version))
+	rootCmd.AddCommand(NewCmdRun())
 
 	return rootCmd
 }

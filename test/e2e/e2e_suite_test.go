@@ -9,7 +9,6 @@ import (
 
 	"github.com/appscode/go/homedir"
 	logs "github.com/appscode/go/log/golog"
-	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1"
 	snapc "github.com/kubedb/apimachinery/pkg/controller/snapshot"
@@ -25,13 +24,15 @@ import (
 )
 
 var (
-	storageClass string
-	registry     string
+	storageClass       string
+	registry           string
+	providedController bool
 )
 
 func init() {
 	flag.StringVar(&storageClass, "storageclass", "", "Kubernetes StorageClass name")
 	flag.StringVar(&registry, "docker-registry", "kubedb", "User provided docker repository")
+	flag.BoolVar(&providedController, "provided-controller", false, "Enable this for provided controller")
 }
 
 const (
@@ -66,7 +67,6 @@ var _ = BeforeSuite(func() {
 	//restClient := kubeClient.RESTClient()
 	apiExtKubeClient := crd_cs.NewForConfigOrDie(config)
 	extClient := cs.NewForConfigOrDie(config)
-	promClient, err := pcm.NewForConfig(config)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -79,27 +79,29 @@ var _ = BeforeSuite(func() {
 	err = root.CreateNamespace()
 	Expect(err).NotTo(HaveOccurred())
 
-	cronController := snapc.NewCronController(kubeClient, extClient)
-	// Start Cron
-	cronController.StartCron()
+	if !providedController {
+		cronController := snapc.NewCronController(kubeClient, extClient)
+		// Start Cron
+		cronController.StartCron()
 
-	opt := controller.Options{
-		Docker: docker.Docker{
-			Registry: registry,
-		},
-		OperatorNamespace: root.Namespace(),
-		GoverningService:  api.DatabaseNamePrefix,
-		MaxNumRequeues:    5,
-		AnalyticsClientID: "$kubedb$elasticsearch$e2e",
-	}
+		opt := controller.Options{
+			Docker: docker.Docker{
+				Registry: registry,
+			},
+			OperatorNamespace: root.Namespace(),
+			GoverningService:  api.DatabaseNamePrefix,
+			MaxNumRequeues:    5,
+			AnalyticsClientID: "$kubedb$elasticsearch$e2e",
+		}
 
-	// Controller
-	ctrl = controller.New(kubeClient, apiExtKubeClient, extClient, promClient, cronController, opt)
-	err = ctrl.Setup()
-	if err != nil {
-		log.Fatalln(err)
+		// Controller
+		ctrl = controller.New(config, kubeClient, apiExtKubeClient, extClient, nil, cronController, opt)
+		err = ctrl.Setup()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		ctrl.Run()
 	}
-	ctrl.Run()
 })
 
 var _ = AfterSuite(func() {

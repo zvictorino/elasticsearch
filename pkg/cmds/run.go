@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -8,7 +9,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/runtime"
-	stringz "github.com/appscode/go/strings"
+	"github.com/appscode/kutil/tools/analytics"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1"
@@ -23,22 +24,26 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func NewCmdRun(version string) *cobra.Command {
-	var (
-		masterURL      string
-		kubeconfigPath string
-	)
-
-	opt := controller.Options{
+var (
+	opt = controller.Options{
 		Docker: docker.Docker{
-			Registry:    "kubedb",
-			ExporterTag: stringz.Val(version, "canary"),
+			Registry: "kubedb",
 		},
 		OperatorNamespace: namespace(),
 		GoverningService:  "kubedb",
 		Address:           ":8080",
-		AnalyticsClientID: analyticsClientID,
+		EnableAnalytics:   true,
+		AnalyticsClientID: analytics.ClientID(),
 	}
+)
+
+func NewCmdRun() *cobra.Command {
+	var (
+		masterURL          string
+		kubeconfigPath     string
+		prometheusCrdGroup = pcm.Group
+		prometheusCrdKinds = pcm.DefaultCrdKinds
+	)
 
 	cmd := &cobra.Command{
 		Use:               "run",
@@ -53,7 +58,7 @@ func NewCmdRun(version string) *cobra.Command {
 			client := kubernetes.NewForConfigOrDie(config)
 			apiExtKubeClient := crd_cs.NewForConfigOrDie(config)
 			extClient := cs.NewForConfigOrDie(config)
-			promClient, err := pcm.NewForConfig(config)
+			promClient, err := pcm.NewForConfig(&prometheusCrdKinds, prometheusCrdGroup, config)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -74,7 +79,7 @@ func NewCmdRun(version string) *cobra.Command {
 				log.Fatalln(err)
 			}
 
-			w := controller.New(client, apiExtKubeClient, extClient, promClient, cronController, opt)
+			w := controller.New(config, client, apiExtKubeClient, extClient, promClient, cronController, opt)
 			defer runtime.HandleCrash()
 
 			// Ensuring Custom Resources Definitions
@@ -95,6 +100,11 @@ func NewCmdRun(version string) *cobra.Command {
 	cmd.Flags().StringVar(&opt.Docker.Registry, "docker-registry", opt.Docker.Registry, "User provided docker repository")
 	cmd.Flags().StringVar(&opt.Docker.ExporterTag, "exporter-tag", opt.Docker.ExporterTag, "Tag of kubedb/operator used as exporter")
 	cmd.Flags().StringVar(&opt.Address, "address", opt.Address, "Address to listen on for web interface and telemetry.")
+
+	fs := flag.NewFlagSet("prometheus", flag.ExitOnError)
+	fs.StringVar(&prometheusCrdGroup, "prometheus-crd-apigroup", prometheusCrdGroup, "prometheus CRD  API group name")
+	fs.Var(&prometheusCrdKinds, "prometheus-crd-kinds", " - EXPERIMENTAL (could be removed in future releases) - customize CRD kind names")
+	cmd.Flags().AddGoFlagSet(fs)
 
 	return cmd
 }

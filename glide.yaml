@@ -3,9 +3,7 @@ import:
 - package: github.com/appscode/go
 - package: github.com/appscode/pat
 - package: github.com/coreos/prometheus-operator
-  repo: https://github.com/appscode/prometheus-operator.git
-  vcs: git
-  version: client-go-5
+  version: v0.16.0
 - package: github.com/ghodss/yaml
   version: v1.0.0
 - package: github.com/graymeta/stow
@@ -39,6 +37,9 @@ import:
   vcs: git
   version: v1.8.3
 - package: gopkg.in/olivere/elastic.v5
+  version: v5.0.61
+- package: github.com/mailru/easyjson
+  version: 32fa128f234d041f196a9f3e0fea5ac9772c08e1
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4

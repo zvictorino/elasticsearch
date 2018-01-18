@@ -5,6 +5,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
+	mon_api "github.com/appscode/kube-mon/api"
 	"github.com/appscode/kutil"
 	app_util "github.com/appscode/kutil/apps/v1beta1"
 	core_util "github.com/appscode/kutil/core/v1"
@@ -342,15 +343,15 @@ func upsertPort(statefulSet *apps.StatefulSet, isClient bool) *apps.StatefulSet 
 	getPorts := func() []core.ContainerPort {
 		portList := []core.ContainerPort{
 			{
-				Name:          "transport",
-				ContainerPort: 9300,
+				Name:          ElasticsearchNodePortName,
+				ContainerPort: ElasticsearchNodePort,
 				Protocol:      core.ProtocolTCP,
 			},
 		}
 		if isClient {
 			portList = append(portList, core.ContainerPort{
-				Name:          "http",
-				ContainerPort: 9200,
+				Name:          ElasticsearchRestPortName,
+				ContainerPort: ElasticsearchRestPort,
 				Protocol:      core.ProtocolTCP,
 			})
 		}
@@ -369,16 +370,14 @@ func upsertPort(statefulSet *apps.StatefulSet, isClient bool) *apps.StatefulSet 
 }
 
 func (c *Controller) upsertMonitoringContainer(statefulSet *apps.StatefulSet, elasticsearch *api.Elasticsearch) *apps.StatefulSet {
-	if elasticsearch.Spec.Monitor != nil &&
-		elasticsearch.Spec.Monitor.Agent == api.AgentCoreosPrometheus &&
-		elasticsearch.Spec.Monitor.Prometheus != nil {
+	if elasticsearch.GetMonitoringVendor() == mon_api.VendorPrometheus {
 		container := core.Container{
 			Name: "exporter",
-			Args: []string{
+			Args: append([]string{
 				"export",
 				fmt.Sprintf("--address=:%d", api.PrometheusExporterPortNumber),
-				"--v=3",
-			},
+				fmt.Sprintf("--analytics=%v", c.opt.EnableAnalytics),
+			}, c.opt.LoggerOptions.ToFlags()...),
 			Image:           c.opt.Docker.GetOperatorImageWithTag(elasticsearch),
 			ImagePullPolicy: core.PullIfNotPresent,
 			Ports: []core.ContainerPort{
@@ -388,10 +387,28 @@ func (c *Controller) upsertMonitoringContainer(statefulSet *apps.StatefulSet, el
 					ContainerPort: int32(api.PrometheusExporterPortNumber),
 				},
 			},
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      "secret",
+					MountPath: ExporterSecretPath,
+				},
+			},
 		}
 		containers := statefulSet.Spec.Template.Spec.Containers
 		containers = core_util.UpsertContainer(containers, container)
 		statefulSet.Spec.Template.Spec.Containers = containers
+
+		volume := core.Volume{
+			Name: "secret",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: elasticsearch.Spec.DatabaseSecret.SecretName,
+				},
+			},
+		}
+		volumes := statefulSet.Spec.Template.Spec.Volumes
+		volumes = core_util.UpsertVolume(volumes, volume)
+		statefulSet.Spec.Template.Spec.Volumes = volumes
 	}
 	return statefulSet
 }
