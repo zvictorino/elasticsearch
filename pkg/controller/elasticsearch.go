@@ -155,7 +155,7 @@ func (c *Controller) create(elasticsearch *api.Elasticsearch) error {
 			return err
 		}
 		elasticsearch.Annotations = es.Annotations
-		*elasticsearch.Spec.Init = *es.Spec.Init
+		elasticsearch.Spec.Init = es.Spec.Init
 	}
 
 	// Ensure Schedule backup
