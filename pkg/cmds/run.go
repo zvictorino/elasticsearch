@@ -9,6 +9,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/runtime"
+	stringz "github.com/appscode/go/strings"
 	"github.com/appscode/kutil/tools/analytics"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -27,7 +28,8 @@ import (
 var (
 	opt = controller.Options{
 		Docker: docker.Docker{
-			Registry: "kubedb",
+			Registry:    "kubedb",
+			ExporterTag: "canary",
 		},
 		OperatorNamespace: namespace(),
 		GoverningService:  "kubedb",
@@ -37,13 +39,15 @@ var (
 	}
 )
 
-func NewCmdRun() *cobra.Command {
+func NewCmdRun(version string) *cobra.Command {
 	var (
 		masterURL          string
 		kubeconfigPath     string
 		prometheusCrdGroup = pcm.Group
 		prometheusCrdKinds = pcm.DefaultCrdKinds
 	)
+
+	opt.Docker.ExporterTag = stringz.Val(version, opt.Docker.ExporterTag)
 
 	cmd := &cobra.Command{
 		Use:               "run",

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/appscode/go/log/golog"
-	stringz "github.com/appscode/go/strings"
 	v "github.com/appscode/go/version"
 	"github.com/jpillora/go-ogle-analytics"
 	"github.com/kubedb/apimachinery/client/scheme"
@@ -36,7 +35,6 @@ func NewRootCmd(version string) *cobra.Command {
 			}
 			scheme.AddToScheme(clientsetscheme.Scheme)
 			opt.LoggerOptions = golog.ParseFlags(c.Flags())
-			opt.Docker.ExporterTag = stringz.Val(version, "canary")
 		},
 	}
 	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
@@ -45,7 +43,7 @@ func NewRootCmd(version string) *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&opt.EnableAnalytics, "analytics", opt.EnableAnalytics, "Send analytical events to Google Analytics")
 
 	rootCmd.AddCommand(v.NewCmdVersion())
-	rootCmd.AddCommand(NewCmdRun())
+	rootCmd.AddCommand(NewCmdRun(version))
 
 	return rootCmd
 }
