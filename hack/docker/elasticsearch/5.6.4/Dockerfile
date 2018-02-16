@@ -9,7 +9,7 @@ ENV NODE_NAME=""
 RUN ./bin/elasticsearch-plugin install ingest-attachment
 
 # Install search-guard
-RUN ./bin/elasticsearch-plugin install -b com.floragunn:search-guard-5:5.6.4-16
+RUN ./bin/elasticsearch-plugin install -b com.floragunn:search-guard-5:5.6.4-18
 
 RUN chmod +x -R plugins/search-guard-5/tools/*.sh
 
@@ -24,7 +24,7 @@ ENV HTTP_CORS_ENABLE true
 ENV HTTP_CORS_ALLOW_ORIGIN *
 ENV DISCOVERY_SERVICE ""
 ENV NUMBER_OF_MASTERS 1
-ENV SSL_ENABLE=true
+ENV SSL_ENABLE=false
 ENV MODE=""
 
 ADD config /elasticsearch/config

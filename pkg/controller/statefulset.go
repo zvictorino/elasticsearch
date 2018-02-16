@@ -66,7 +66,7 @@ func (c *Controller) ensureStatefulSet(
 			in = upsertDatabaseSecret(in, elasticsearch.Spec.DatabaseSecret.SecretName)
 		}
 
-		in = upsertCertificate(in, elasticsearch.Spec.CertificateSecret.SecretName, isClient)
+		in = upsertCertificate(in, elasticsearch.Spec.CertificateSecret.SecretName, isClient, elasticsearch.Spec.EnableSSL)
 		in = upsertDataVolume(in, elasticsearch)
 		in.Spec.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
 
@@ -281,8 +281,8 @@ func upsertInitContainer(statefulSet *apps.StatefulSet) *apps.StatefulSet {
 
 func (c *Controller) upsertContainer(statefulSet *apps.StatefulSet, elasticsearch *api.Elasticsearch) *apps.StatefulSet {
 	container := core.Container{
-		Name:  api.ResourceNameElasticsearch,
-		Image: c.opt.Docker.GetImageWithTag(elasticsearch),
+		Name:            api.ResourceNameElasticsearch,
+		Image:           c.opt.Docker.GetImageWithTag(elasticsearch),
 		SecurityContext: &core.SecurityContext{
 			Privileged: types.BoolP(false),
 			Capabilities: &core.Capabilities{
@@ -322,6 +322,17 @@ func upsertEnv(statefulSet *apps.StatefulSet, elasticsearch *api.Elasticsearch, 
 		{
 			Name:  "SSL_ENABLE",
 			Value: fmt.Sprintf("%v", elasticsearch.Spec.EnableSSL),
+		},
+		{
+			Name: "KEY_PASS",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: elasticsearch.Spec.CertificateSecret.SecretName,
+					},
+					Key: "key_pass",
+				},
+			},
 		},
 	}
 
@@ -413,20 +424,27 @@ func (c *Controller) upsertMonitoringContainer(statefulSet *apps.StatefulSet, el
 	return statefulSet
 }
 
-func upsertCertificate(statefulSet *apps.StatefulSet, secretName string, isClientNode bool) *apps.StatefulSet {
+func upsertCertificate(statefulSet *apps.StatefulSet, secretName string, isClientNode, isEnalbeSSL bool) *apps.StatefulSet {
 	addCertVolume := func() *core.SecretVolumeSource {
 		svs := &core.SecretVolumeSource{
 			SecretName: secretName,
 			Items: []core.KeyToPath{
 				{
-					Key:  "truststore.jks",
-					Path: "truststore.jks",
+					Key:  "root.jks",
+					Path: "root.jks",
 				},
 				{
-					Key:  "keystore.jks",
-					Path: "keystore.jks",
+					Key:  "node.jks",
+					Path: "node.jks",
 				},
 			},
+		}
+
+		if isEnalbeSSL {
+			svs.Items = append(svs.Items, core.KeyToPath{
+				Key:  "client.jks",
+				Path: "client.jks",
+			})
 		}
 
 		if isClientNode {
