@@ -4,7 +4,8 @@ import (
 	"time"
 
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/go/encoding/json/types"
+	jtypes "github.com/appscode/go/encoding/json/types"
+	"github.com/appscode/go/types"
 	core_util "github.com/appscode/kutil/core/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	kutildb "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -24,8 +25,8 @@ func (i *Invocation) CombinedElasticsearch() *api.Elasticsearch {
 			},
 		},
 		Spec: api.ElasticsearchSpec{
-			Version:   types.StrYo("5.6.4"),
-			Replicas:  1,
+			Version:   jtypes.StrYo("5.6.4"),
+			Replicas:  types.Int32P(1),
 			EnableSSL: true,
 		},
 	}
@@ -41,18 +42,18 @@ func (i *Invocation) DedicatedElasticsearch() *api.Elasticsearch {
 			},
 		},
 		Spec: api.ElasticsearchSpec{
-			Version: types.StrYo("5.6.4"),
+			Version: jtypes.StrYo("5.6.4"),
 			Topology: &api.ElasticsearchClusterTopology{
 				Master: api.ElasticsearchNode{
-					Replicas: 2,
+					Replicas: types.Int32P(2),
 					Prefix:   "master",
 				},
 				Data: api.ElasticsearchNode{
-					Replicas: 2,
+					Replicas: types.Int32P(2),
 					Prefix:   "data",
 				},
 				Client: api.ElasticsearchNode{
-					Replicas: 2,
+					Replicas: types.Int32P(2),
 					Prefix:   "client",
 				},
 			},
