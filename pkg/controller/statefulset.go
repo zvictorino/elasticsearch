@@ -251,7 +251,7 @@ func (c *Controller) ensureCombinedNode(elasticsearch *api.Elasticsearch) (kutil
 func (c *Controller) checkStatefulSet(elasticsearch *api.Elasticsearch, name string) error {
 	elasticsearchName := elasticsearch.OffshootName()
 	// SatatefulSet for Elasticsearch database
-	statefulSet, err := c.Client.AppsV1beta1().StatefulSets(elasticsearch.Namespace).Get(name, metav1.GetOptions{})
+	statefulSet, err := c.Client.AppsV1().StatefulSets(elasticsearch.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil
