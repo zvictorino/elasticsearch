@@ -29,5 +29,6 @@ dist/
 
 **/.env
 apiserver.local.config
+junit.xml
 coverage.txt
 junit.xml
