@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"os"
 
-	"github.com/appscode/go/types"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/elasticsearch/test/e2e/framework"
 	"github.com/kubedb/elasticsearch/test/e2e/matcher"
@@ -97,46 +96,13 @@ var _ = Describe("Elasticsearch", func() {
 		}
 	})
 
-	var shouldRunSuccessfully = func() {
-		if skipMessage != "" {
-			Skip(skipMessage)
-		}
-
-		// Create Elasticsearch
-		createAndWaitForRunning()
-	}
-
 	Describe("Test", func() {
 
 		Context("General", func() {
 
 			Context("-", func() {
-				It("should run successfully", shouldRunSuccessfully)
-			})
 
-			Context("Dedicated elasticsearch", func() {
-				BeforeEach(func() {
-					elasticsearch = f.DedicatedElasticsearch()
-				})
-				It("should run successfully", shouldRunSuccessfully)
-			})
-
-			Context("With PVC", func() {
-				BeforeEach(func() {
-					if f.StorageClass == "" {
-						skipMessage = "Missing StorageClassName. Provide as flag to test this."
-					}
-					elasticsearch.Spec.Storage = &core.PersistentVolumeClaimSpec{
-						Resources: core.ResourceRequirements{
-							Requests: core.ResourceList{
-								core.ResourceStorage: resource.MustParse("5Gi"),
-							},
-						},
-						StorageClassName: types.StringP(f.StorageClass),
-					}
-
-				})
-				It("should run successfully", func() {
+				var shouldRunSuccessfully = func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
 					}
@@ -184,8 +150,72 @@ var _ = Describe("Elasticsearch", func() {
 
 					By("Checking new indices")
 					f.EventuallyElasticsearchIndicesCount(elasticClient).Should(Equal(3))
+				}
+
+				Context("with Default Resource", func() {
+
+					It("should run successfully", shouldRunSuccessfully)
+
+				})
+
+				Context("Custom Resource", func() {
+					BeforeEach(func() {
+						elasticsearch.Spec.Resources = &core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceMemory: resource.MustParse("512Mi"),
+							},
+						}
+					})
+
+					It("should run successfully", shouldRunSuccessfully)
+
 				})
 			})
+
+			Context("Dedicated elasticsearch", func() {
+				BeforeEach(func() {
+					elasticsearch = f.DedicatedElasticsearch()
+				})
+
+				var shouldRunSuccessfully = func() {
+					if skipMessage != "" {
+						Skip(skipMessage)
+					}
+					// Create Elasticsearch
+					createAndWaitForRunning()
+				}
+
+				Context("with Default Resource", func() {
+
+					It("should run successfully", shouldRunSuccessfully)
+
+				})
+
+				Context("Custom Resource", func() {
+					BeforeEach(func() {
+						elasticsearch.Spec.Topology.Client.Resources = core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceMemory: resource.MustParse("128Mi"),
+							},
+						}
+						elasticsearch.Spec.Topology.Master.Resources = core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceMemory: resource.MustParse("128Mi"),
+							},
+						}
+						elasticsearch.Spec.Topology.Data.Resources = core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceMemory: resource.MustParse("128Mi"),
+							},
+						}
+					})
+
+					It("should run successfully", shouldRunSuccessfully)
+
+				})
+
+			})
+
 		})
 
 		Context("DoNotPause", func() {
