@@ -208,7 +208,7 @@ func (c *Controller) ensureStatsService(elasticsearch *api.Elasticsearch) (kutil
 		return kutil.VerbUnchanged, rerr
 	}
 
-	// create/patch statsService
+	// reconcile statsService
 	meta := metav1.ObjectMeta{
 		Name:      elasticsearch.StatsService().ServiceName(),
 		Namespace: elasticsearch.Namespace,
@@ -232,7 +232,7 @@ func (c *Controller) ensureStatsService(elasticsearch *api.Elasticsearch) (kutil
 			ref,
 			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
-			"Failed to create stats service. Reason: %v",
+			"Failed to reconcile stats service. Reason: %v",
 			err,
 		)
 		return kutil.VerbUnchanged, err
