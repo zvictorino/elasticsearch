@@ -19,12 +19,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 type ElasticsearchValidator struct {
 	client      kubernetes.Interface
+	dc          dynamic.Interface
 	extClient   cs.Interface
 	lock        sync.RWMutex
 	initialized bool
@@ -57,6 +59,9 @@ func (a *ElasticsearchValidator) Initialize(config *rest.Config, stopCh <-chan s
 	if a.client, err = kubernetes.NewForConfig(config); err != nil {
 		return err
 	}
+	if a.dc, err = dynamic.NewForConfig(config); err != nil {
+		return err
+	}
 	if a.extClient, err = cs.NewForConfig(config); err != nil {
 		return err
 	}
@@ -85,7 +90,10 @@ func (a *ElasticsearchValidator) Admit(req *admission.AdmissionRequest) *admissi
 		if req.Name != "" {
 			// req.Object.Raw = nil, so read from kubernetes
 			obj, err := a.extClient.KubedbV1alpha1().Elasticsearches(req.Namespace).Get(req.Name, metav1.GetOptions{})
-			if err != nil && !kerr.IsNotFound(err) {
+			if err != nil {
+				if kerr.IsNotFound(err) {
+					break
+				}
 				return hookapi.StatusInternalServerError(err)
 			} else if err == nil && obj.Spec.DoNotPause {
 				return hookapi.StatusBadRequest(fmt.Errorf(`elasticsearch "%s" can't be paused. To continue delete, unset spec.doNotPause and retry`, req.Name))
@@ -267,6 +275,12 @@ func matchWithDormantDatabase(extClient kubedbv1alpha1.KubedbV1alpha1Interface, 
 
 	// Skip checking doNotPause
 	drmnOriginSpec.DoNotPause = originalSpec.DoNotPause
+
+	// Skip checking UpdateStrategy
+	drmnOriginSpec.UpdateStrategy = originalSpec.UpdateStrategy
+
+	// Skip checking TerminationPolicy
+	drmnOriginSpec.TerminationPolicy = originalSpec.TerminationPolicy
 
 	// Skip checking Monitoring
 	drmnOriginSpec.Monitor = originalSpec.Monitor
