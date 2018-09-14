@@ -33,6 +33,7 @@ var _ = Describe("Elasticsearch", func() {
 		garbageElasticsearch     *api.ElasticsearchList
 		elasticsearchVersion     *api.ElasticsearchVersion
 		snapshot                 *api.Snapshot
+		snapshotPVC              *core.PersistentVolumeClaim
 		secret                   *core.Secret
 		skipMessage              string
 		skipSnapshotDataChecking bool
@@ -122,6 +123,13 @@ var _ = Describe("Elasticsearch", func() {
 
 		if secret != nil {
 			f.DeleteSecret(secret.ObjectMeta)
+		}
+
+		if snapshotPVC != nil {
+			err := f.DeletePersistentVolumeClaim(snapshotPVC.ObjectMeta)
+			if err != nil && !kerr.IsNotFound(err) {
+				Expect(err).NotTo(HaveOccurred())
+			}
 		}
 
 		err = f.DeleteElasticsearchVersion(elasticsearchVersion.ObjectMeta)
@@ -327,7 +335,39 @@ var _ = Describe("Elasticsearch", func() {
 					}
 				})
 
-				It("should take Snapshot successfully", shouldTakeSnapshot)
+				Context("With EmptyDir as Snapshot's backend", func() {
+
+					It("should take Snapshot successfully", shouldTakeSnapshot)
+				})
+
+				Context("With PVC as Snapshot's backend", func() {
+
+					BeforeEach(func() {
+						snapshotPVC = f.GetPersistentVolumeClaim()
+						By("Creating PVC for local backend snapshot")
+						err := f.CreatePersistentVolumeClaim(snapshotPVC)
+						Expect(err).NotTo(HaveOccurred())
+
+						snapshot.Spec.Local = &store.LocalSpec{
+							MountPath: "/repo",
+							VolumeSource: core.VolumeSource{
+								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+									ClaimName: snapshotPVC.Name,
+								},
+							},
+						}
+					})
+
+					It("should delete Snapshot successfully", func() {
+						shouldTakeSnapshot()
+
+						By("Deleting Snapshot")
+						f.DeleteSnapshot(snapshot.ObjectMeta)
+
+						By("Waiting Snapshot to be deleted")
+						f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeFalse())
+					})
+				})
 
 				Context("with SSL disabled", func() {
 					BeforeEach(func() {
@@ -342,6 +382,7 @@ var _ = Describe("Elasticsearch", func() {
 						elasticsearch = f.DedicatedElasticsearch()
 						snapshot.Spec.DatabaseName = elasticsearch.Name
 					})
+
 					It("should take Snapshot successfully", shouldTakeSnapshot)
 
 					Context("with SSL disabled", func() {
@@ -521,6 +562,7 @@ var _ = Describe("Elasticsearch", func() {
 		})
 
 		Context("Initialize", func() {
+
 			BeforeEach(func() {
 				skipSnapshotDataChecking = false
 				secret = f.SecretForS3Backend()
@@ -597,6 +639,33 @@ var _ = Describe("Elasticsearch", func() {
 
 			Context("-", func() {
 				It("should initialize database successfully", shouldInitialize)
+			})
+
+			Context("with local volume", func() {
+
+				BeforeEach(func() {
+					snapshotPVC = f.GetPersistentVolumeClaim()
+					By("Creating PVC for local backend snapshot")
+					err := f.CreatePersistentVolumeClaim(snapshotPVC)
+					Expect(err).NotTo(HaveOccurred())
+
+					skipSnapshotDataChecking = true
+					secret = f.SecretForLocalBackend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.Backend = store.Backend{
+						Local: &store.LocalSpec{
+							MountPath: "/repo",
+							VolumeSource: core.VolumeSource{
+								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+									ClaimName: snapshotPVC.Name,
+								},
+							},
+						},
+					}
+				})
+
+				It("should initialize database successfully", shouldInitialize)
+
 			})
 
 			Context("with SSL disabled", func() {
@@ -950,6 +1019,9 @@ var _ = Describe("Elasticsearch", func() {
 					By("wait until elasticsearch is deleted")
 					f.EventuallyElasticsearch(elasticsearch.ObjectMeta).Should(BeFalse())
 
+					By("Checking DormantDatabase is not created")
+					f.EventuallyDormantDatabase(elasticsearch.ObjectMeta).Should(BeFalse())
+
 					By("Check for deleted PVCs")
 					f.EventuallyPVCCount(elasticsearch.ObjectMeta).Should(Equal(0))
 
@@ -1016,6 +1088,9 @@ var _ = Describe("Elasticsearch", func() {
 
 					By("wait until elasticsearch is deleted")
 					f.EventuallyElasticsearch(elasticsearch.ObjectMeta).Should(BeFalse())
+
+					By("Checking DormantDatabase is not created")
+					f.EventuallyDormantDatabase(elasticsearch.ObjectMeta).Should(BeFalse())
 
 					By("Check for deleted PVCs")
 					f.EventuallyPVCCount(elasticsearch.ObjectMeta).Should(Equal(0))

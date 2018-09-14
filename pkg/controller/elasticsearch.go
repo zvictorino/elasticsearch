@@ -48,10 +48,11 @@ func (c *Controller) create(elasticsearch *api.Elasticsearch) error {
 			elasticsearch,
 			core.EventTypeWarning,
 			eventer.EventReasonInvalid,
-			"DBVersion %v is deprecated. Skipped processing.",
+			"ElasticsearchVersion %v is deprecated. Skipped processing.",
 			elasticsearchVersion.Name,
 		)
-		log.Errorf("DBVersion %v is deprecated. Skipped processing.", elasticsearchVersion.Name)
+		log.Errorf("Elasticsearch %s/%s is using deprecated version %v. Skipped processing.",
+			elasticsearch.Namespace, elasticsearch.Name, elasticsearchVersion.Name)
 		return nil
 	}
 
