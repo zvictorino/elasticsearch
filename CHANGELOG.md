@@ -1,5 +1,82 @@
 # Change Log
 
+## [0.9.0-beta.0](https://github.com/kubedb/elasticsearch/tree/0.9.0-beta.0) (2018-09-20)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.8.0...0.9.0-beta.0)
+
+**Fixed bugs:**
+
+- Search used secrets within same namespace of ES [\#200](https://github.com/kubedb/elasticsearch/pull/200) ([tamalsaha](https://github.com/tamalsaha))
+
+**Merged pull requests:**
+
+- Show Deprecated column for Elasticsearchversions [\#202](https://github.com/kubedb/elasticsearch/pull/202) ([hossainemruz](https://github.com/hossainemruz))
+- Pass extra args to tools.sh [\#201](https://github.com/kubedb/elasticsearch/pull/201) ([the-redback](https://github.com/the-redback))
+- Use suffix for updated DBImage & Stop working for deprecated \*Versions [\#199](https://github.com/kubedb/elasticsearch/pull/199) ([the-redback](https://github.com/the-redback))
+- Don't try to wipe out Snapshot data for Local backend [\#198](https://github.com/kubedb/elasticsearch/pull/198) ([hossainemruz](https://github.com/hossainemruz))
+- Revendor k8s.io/apiserver [\#197](https://github.com/kubedb/elasticsearch/pull/197) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor kubernetes-1.11.3 [\#196](https://github.com/kubedb/elasticsearch/pull/196) ([tamalsaha](https://github.com/tamalsaha))
+- Support UpdateStrategy [\#195](https://github.com/kubedb/elasticsearch/pull/195) ([tamalsaha](https://github.com/tamalsaha))
+-  Support Termination Policy [\#194](https://github.com/kubedb/elasticsearch/pull/194) ([the-redback](https://github.com/the-redback))
+- Add TerminationPolicy for databases [\#193](https://github.com/kubedb/elasticsearch/pull/193) ([tamalsaha](https://github.com/tamalsaha))
+- Fix http/https scheme for EnableSSL [\#192](https://github.com/kubedb/elasticsearch/pull/192) ([the-redback](https://github.com/the-redback))
+- Revendor api [\#191](https://github.com/kubedb/elasticsearch/pull/191) ([tamalsaha](https://github.com/tamalsaha))
+- Fix build [\#190](https://github.com/kubedb/elasticsearch/pull/190) ([tamalsaha](https://github.com/tamalsaha))
+- Use IntHash in AlreadyObserved helpers [\#189](https://github.com/kubedb/elasticsearch/pull/189) ([tamalsaha](https://github.com/tamalsaha))
+- Improve error message for GetIndices [\#188](https://github.com/kubedb/elasticsearch/pull/188) ([the-redback](https://github.com/the-redback))
+- fix github status [\#187](https://github.com/kubedb/elasticsearch/pull/187) ([tahsinrahman](https://github.com/tahsinrahman))
+- Fix E2E test for minikube & Fixed elasticsearch db image 5.6.4 [\#186](https://github.com/kubedb/elasticsearch/pull/186) ([the-redback](https://github.com/the-redback))
+- update pipeline [\#185](https://github.com/kubedb/elasticsearch/pull/185) ([tahsinrahman](https://github.com/tahsinrahman))
+- Add Kibana docker files [\#184](https://github.com/kubedb/elasticsearch/pull/184) ([hossainemruz](https://github.com/hossainemruz))
+- update pipeline [\#183](https://github.com/kubedb/elasticsearch/pull/183) ([tahsinrahman](https://github.com/tahsinrahman))
+- Disable Search Guard enterprise modules by default [\#182](https://github.com/kubedb/elasticsearch/pull/182) ([hossainemruz](https://github.com/hossainemruz))
+- Use Exporters directly [\#181](https://github.com/kubedb/elasticsearch/pull/181) ([hossainemruz](https://github.com/hossainemruz))
+- Migrate elasticsearch [\#180](https://github.com/kubedb/elasticsearch/pull/180) ([tamalsaha](https://github.com/tamalsaha))
+- Update status.ObservedGeneration for failure phase [\#179](https://github.com/kubedb/elasticsearch/pull/179) ([the-redback](https://github.com/the-redback))
+- Set `USE\_SSL` env in exporter container [\#178](https://github.com/kubedb/elasticsearch/pull/178) ([hossainemruz](https://github.com/hossainemruz))
+- Use NewObservableHandler [\#177](https://github.com/kubedb/elasticsearch/pull/177) ([tamalsaha](https://github.com/tamalsaha))
+- Fix uninstall for concourse [\#176](https://github.com/kubedb/elasticsearch/pull/176) ([tahsinrahman](https://github.com/tahsinrahman))
+- Use Search Guard 23.0 for Elasticsearch 6.3 [\#175](https://github.com/kubedb/elasticsearch/pull/175) ([hossainemruz](https://github.com/hossainemruz))
+- Revised verification of spec fields [\#174](https://github.com/kubedb/elasticsearch/pull/174) ([the-redback](https://github.com/the-redback))
+- Support passing args via PodTemplate [\#173](https://github.com/kubedb/elasticsearch/pull/173) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor api [\#172](https://github.com/kubedb/elasticsearch/pull/172) ([tamalsaha](https://github.com/tamalsaha))
+- Update error message [\#171](https://github.com/kubedb/elasticsearch/pull/171) ([tamalsaha](https://github.com/tamalsaha))
+- Introduce storageType : ephemeral [\#170](https://github.com/kubedb/elasticsearch/pull/170) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor api [\#169](https://github.com/kubedb/elasticsearch/pull/169) ([tamalsaha](https://github.com/tamalsaha))
+- Add support for running tests on cncf cluster [\#168](https://github.com/kubedb/elasticsearch/pull/168) ([tahsinrahman](https://github.com/tahsinrahman))
+- Support both .yml and .yaml for config files [\#167](https://github.com/kubedb/elasticsearch/pull/167) ([hossainemruz](https://github.com/hossainemruz))
+- Keep track of observedGeneration in status [\#166](https://github.com/kubedb/elasticsearch/pull/166) ([tamalsaha](https://github.com/tamalsaha))
+- Fix comments for stats service [\#165](https://github.com/kubedb/elasticsearch/pull/165) ([tamalsaha](https://github.com/tamalsaha))
+-  Separate StatsService for monitoring [\#164](https://github.com/kubedb/elasticsearch/pull/164) ([the-redback](https://github.com/the-redback))
+-  Use ElasticsearchVersion for Elasticsearch images [\#163](https://github.com/kubedb/elasticsearch/pull/163) ([the-redback](https://github.com/the-redback))
+- Use updated crd spec [\#162](https://github.com/kubedb/elasticsearch/pull/162) ([tamalsaha](https://github.com/tamalsaha))
+- Rename OffshootLabels to OffshootSelectors [\#161](https://github.com/kubedb/elasticsearch/pull/161) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor api [\#160](https://github.com/kubedb/elasticsearch/pull/160) ([tamalsaha](https://github.com/tamalsaha))
+- Fix docker for es-6.3.0 and revendored [\#159](https://github.com/kubedb/elasticsearch/pull/159) ([the-redback](https://github.com/the-redback))
+- Use kmodules monitoring and objectstore api [\#158](https://github.com/kubedb/elasticsearch/pull/158) ([tamalsaha](https://github.com/tamalsaha))
+- Support Elasticsearch 6.3 [\#157](https://github.com/kubedb/elasticsearch/pull/157) ([tamalsaha](https://github.com/tamalsaha))
+- Support custom configuration  [\#156](https://github.com/kubedb/elasticsearch/pull/156) ([hossainemruz](https://github.com/hossainemruz))
+- Refactor concourse scripts [\#155](https://github.com/kubedb/elasticsearch/pull/155) ([tahsinrahman](https://github.com/tahsinrahman))
+- Fix command `./hack/make.py test e2e` [\#154](https://github.com/kubedb/elasticsearch/pull/154) ([the-redback](https://github.com/the-redback))
+- Set generated binary name to es-operator [\#153](https://github.com/kubedb/elasticsearch/pull/153) ([tamalsaha](https://github.com/tamalsaha))
+- Don't add admission/v1beta1 group as a prioritized version [\#152](https://github.com/kubedb/elasticsearch/pull/152) ([tamalsaha](https://github.com/tamalsaha))
+- Enable status subresource for crds [\#151](https://github.com/kubedb/elasticsearch/pull/151) ([tamalsaha](https://github.com/tamalsaha))
+- Update client-go to v8.0.0 [\#150](https://github.com/kubedb/elasticsearch/pull/150) ([tamalsaha](https://github.com/tamalsaha))
+- Format shell script [\#149](https://github.com/kubedb/elasticsearch/pull/149) ([tamalsaha](https://github.com/tamalsaha))
+- Support ENV variables in CRDs [\#146](https://github.com/kubedb/elasticsearch/pull/146) ([hossainemruz](https://github.com/hossainemruz))
+- Updated osm version to 0.7.1 [\#145](https://github.com/kubedb/elasticsearch/pull/145) ([the-redback](https://github.com/the-redback))
+
+## [0.8.0](https://github.com/kubedb/elasticsearch/tree/0.8.0) (2018-06-12)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.8.0-rc.0...0.8.0)
+
+**Merged pull requests:**
+
+- Fix missing error return [\#144](https://github.com/kubedb/elasticsearch/pull/144) ([the-redback](https://github.com/the-redback))
+-  Tests and operator changed to support es-6.2.4 [\#143](https://github.com/kubedb/elasticsearch/pull/143) ([the-redback](https://github.com/the-redback))
+- Added ES 6.2.4 Docker build files [\#142](https://github.com/kubedb/elasticsearch/pull/142) ([stormmore](https://github.com/stormmore))
+- Revendor dependencies [\#141](https://github.com/kubedb/elasticsearch/pull/141) ([tamalsaha](https://github.com/tamalsaha))
+- Support disabling Search Guard [\#140](https://github.com/kubedb/elasticsearch/pull/140) ([tamalsaha](https://github.com/tamalsaha))
+- Add changelog [\#139](https://github.com/kubedb/elasticsearch/pull/139) ([tamalsaha](https://github.com/tamalsaha))
+
 ## [0.8.0-rc.0](https://github.com/kubedb/elasticsearch/tree/0.8.0-rc.0) (2018-05-28)
 [Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.8.0-beta.2...0.8.0-rc.0)
 
@@ -28,7 +105,6 @@
 - update validation [\#122](https://github.com/kubedb/elasticsearch/pull/122) ([aerokite](https://github.com/aerokite))
 - Fix for pointer Type [\#121](https://github.com/kubedb/elasticsearch/pull/121) ([aerokite](https://github.com/aerokite))
 - pass same type to Equal method [\#120](https://github.com/kubedb/elasticsearch/pull/120) ([aerokite](https://github.com/aerokite))
-- Modify certificate DNS [\#119](https://github.com/kubedb/elasticsearch/pull/119) ([aerokite](https://github.com/aerokite))
 - Fixed dormantdb matching & Raised throttling time & Fixed Elasticsearch version checking [\#118](https://github.com/kubedb/elasticsearch/pull/118) ([the-redback](https://github.com/the-redback))
 - Use official code generator scripts [\#117](https://github.com/kubedb/elasticsearch/pull/117) ([tamalsaha](https://github.com/tamalsaha))
 - Use github.com/pkg/errors [\#116](https://github.com/kubedb/elasticsearch/pull/116) ([tamalsaha](https://github.com/tamalsaha))
@@ -40,7 +116,6 @@
 
 **Merged pull requests:**
 
-- Build image from other directories [\#113](https://github.com/kubedb/elasticsearch/pull/113) ([the-redback](https://github.com/the-redback))
 - Fix for Job watcher [\#111](https://github.com/kubedb/elasticsearch/pull/111) ([aerokite](https://github.com/aerokite))
 - reorg docker code structure [\#110](https://github.com/kubedb/elasticsearch/pull/110) ([aerokite](https://github.com/aerokite))
 
@@ -49,15 +124,12 @@
 
 **Merged pull requests:**
 
-- Remove EnableRbac from Option [\#109](https://github.com/kubedb/elasticsearch/pull/109) ([aerokite](https://github.com/aerokite))
 - pass analytics client-id as ENV [\#108](https://github.com/kubedb/elasticsearch/pull/108) ([aerokite](https://github.com/aerokite))
-- update docker image validation [\#107](https://github.com/kubedb/elasticsearch/pull/107) ([aerokite](https://github.com/aerokite))
 - Use work queue [\#106](https://github.com/kubedb/elasticsearch/pull/106) ([aerokite](https://github.com/aerokite))
 - Reorg location of docker images [\#105](https://github.com/kubedb/elasticsearch/pull/105) ([aerokite](https://github.com/aerokite))
 - Set client id for analytics [\#104](https://github.com/kubedb/elasticsearch/pull/104) ([tamalsaha](https://github.com/tamalsaha))
 - Add explanation for oid bytes [\#103](https://github.com/kubedb/elasticsearch/pull/103) ([tamalsaha](https://github.com/tamalsaha))
 - Revendor [\#102](https://github.com/kubedb/elasticsearch/pull/102) ([tamalsaha](https://github.com/tamalsaha))
-- Various fixes in docker & controller [\#101](https://github.com/kubedb/elasticsearch/pull/101) ([aerokite](https://github.com/aerokite))
 - Fix CRD registration [\#100](https://github.com/kubedb/elasticsearch/pull/100) ([the-redback](https://github.com/the-redback))
 - Remove deleted appcode/log package [\#99](https://github.com/kubedb/elasticsearch/pull/99) ([tamalsaha](https://github.com/tamalsaha))
 - Use monitoring tools from appscode/kutil [\#98](https://github.com/kubedb/elasticsearch/pull/98) ([tamalsaha](https://github.com/tamalsaha))
@@ -104,7 +176,6 @@
 - Allow setting resources for StatefulSet or Snapshot/Restore jobs [\#87](https://github.com/kubedb/elasticsearch/pull/87) ([tamalsaha](https://github.com/tamalsaha))
 - Add app=kubedb label to TPR registration [\#86](https://github.com/kubedb/elasticsearch/pull/86) ([tamalsaha](https://github.com/tamalsaha))
 - Support non-default service account with offshoot pods [\#85](https://github.com/kubedb/elasticsearch/pull/85) ([tamalsaha](https://github.com/tamalsaha))
-- Separate validation [\#84](https://github.com/kubedb/elasticsearch/pull/84) ([aerokite](https://github.com/aerokite))
 
 ## [0.2.0](https://github.com/kubedb/elasticsearch/tree/0.2.0) (2017-06-22)
 [Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.1.0...0.2.0)
@@ -134,12 +205,9 @@
 - Prometheus support [\#70](https://github.com/kubedb/elasticsearch/pull/70) ([saumanbiswas](https://github.com/saumanbiswas))
 - Use kubedb docker hub account [\#69](https://github.com/kubedb/elasticsearch/pull/69) ([tamalsaha](https://github.com/tamalsaha))
 - Use kubedb instead of k8sdb [\#68](https://github.com/kubedb/elasticsearch/pull/68) ([tamalsaha](https://github.com/tamalsaha))
-- Do not handle DormantDatabase [\#67](https://github.com/kubedb/elasticsearch/pull/67) ([aerokite](https://github.com/aerokite))
-- Pass clients instead of config [\#66](https://github.com/kubedb/elasticsearch/pull/66) ([aerokite](https://github.com/aerokite))
 - Ungroup imports on fmt [\#64](https://github.com/kubedb/elasticsearch/pull/64) ([tamalsaha](https://github.com/tamalsaha))
 - Fix go report card issue [\#63](https://github.com/kubedb/elasticsearch/pull/63) ([tamalsaha](https://github.com/tamalsaha))
 - Rename DeletedDatabase to DormantDatabase [\#62](https://github.com/kubedb/elasticsearch/pull/62) ([tamalsaha](https://github.com/tamalsaha))
-- Add e2e test for updating scheduler [\#61](https://github.com/kubedb/elasticsearch/pull/61) ([aerokite](https://github.com/aerokite))
 - Fix update operation [\#60](https://github.com/kubedb/elasticsearch/pull/60) ([aerokite](https://github.com/aerokite))
 - Remove prefix from snapshot job [\#59](https://github.com/kubedb/elasticsearch/pull/59) ([aerokite](https://github.com/aerokite))
 - Rename DatabaseSnapshot to Snapshot [\#58](https://github.com/kubedb/elasticsearch/pull/58) ([tamalsaha](https://github.com/tamalsaha))
