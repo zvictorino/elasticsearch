@@ -1,5 +1,5 @@
-hash: a59c4097566331174517ff8581aee35134036918eb627243df04a62f39d92161
-updated: 2018-09-29T21:43:24.67264098-07:00
+hash: 8ce496e7ba6fe8eabd0f73352026fe8001c6535297c8b289328567b01909ca87
+updated: 2018-09-29T23:16:04.035459854-07:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -200,7 +200,7 @@ imports:
   subpackages:
   - md2man
 - name: github.com/davecgh/go-spew
-  version: 782f4967f2dc4564575ca782fe2d04090b5faca8
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
 - name: github.com/dgrijalva/jwt-go
@@ -312,7 +312,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 1624edc4454b8682399def8740d46db5e4362ba4
 - name: github.com/kubedb/apimachinery
-  version: b876a1378a88e32ba80b02378fa40bf4c6d4a2d5
+  version: b93e1eba97539a3eefeae622b05f79b3365d1d28
   subpackages:
   - apis
   - apis/catalog
@@ -591,7 +591,7 @@ imports:
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
-  version: 670d4cfef0544295bc27a114dbac37980d83185a
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/api
   version: 4e7be11eab3ffcfc1876898b8272df53785a9504
   subpackages:
