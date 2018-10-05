@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
+	ofst "kmodules.xyz/offshoot-api/api/v1"
 )
 
 func init() {
@@ -247,6 +248,7 @@ func sampleElasticsearch() api.Elasticsearch {
 		Spec: api.ElasticsearchSpec{
 			Version:     "5.6",
 			Replicas:    types.Int32P(1),
+			AuthPlugin:  api.ElasticsearchAuthPluginSearchGuard,
 			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
 				StorageClassName: types.StringP("standard"),
@@ -256,9 +258,13 @@ func sampleElasticsearch() api.Elasticsearch {
 					},
 				},
 			},
-			Resources: &core.ResourceRequirements{
-				Requests: core.ResourceList{
-					core.ResourceMemory: resource.MustParse("128Mi"),
+			PodTemplate: ofst.PodTemplateSpec{
+				Spec: ofst.PodSpec{
+					Resources: core.ResourceRequirements{
+						Requests: core.ResourceList{
+							core.ResourceMemory: resource.MustParse("128Mi"),
+						},
+					},
 				},
 			},
 			Init: &api.InitSpec{
