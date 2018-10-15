@@ -1,5 +1,37 @@
 # Change Log
 
+## [0.9.0-rc.0](https://github.com/kubedb/elasticsearch/tree/0.9.0-rc.0) (2018-10-15)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0-beta.1...0.9.0-rc.0)
+
+**Merged pull requests:**
+
+- Support providing resources for monitoring container [\#223](https://github.com/kubedb/elasticsearch/pull/223) ([hossainemruz](https://github.com/hossainemruz))
+- Recognize denied request by any webhook in xray [\#222](https://github.com/kubedb/elasticsearch/pull/222) ([tamalsaha](https://github.com/tamalsaha))
+- Update kubernetes client libraries to 1.12.0 [\#221](https://github.com/kubedb/elasticsearch/pull/221) ([tamalsaha](https://github.com/tamalsaha))
+- Add validation webhook xray [\#220](https://github.com/kubedb/elasticsearch/pull/220) ([tamalsaha](https://github.com/tamalsaha))
+- Various fixes [\#219](https://github.com/kubedb/elasticsearch/pull/219) ([hossainemruz](https://github.com/hossainemruz))
+- Update  tools image for different Auth Plugin [\#218](https://github.com/kubedb/elasticsearch/pull/218) ([hossainemruz](https://github.com/hossainemruz))
+- Fix storage validation [\#217](https://github.com/kubedb/elasticsearch/pull/217) ([hossainemruz](https://github.com/hossainemruz))
+- Merge ports from service template [\#215](https://github.com/kubedb/elasticsearch/pull/215) ([tamalsaha](https://github.com/tamalsaha))
+- Replace doNotPause with TerminationPolicy = DoNotTerminate [\#214](https://github.com/kubedb/elasticsearch/pull/214) ([tamalsaha](https://github.com/tamalsaha))
+- Disable Search Guard & Support Elasticsearch 6.4 [\#213](https://github.com/kubedb/elasticsearch/pull/213) ([hossainemruz](https://github.com/hossainemruz))
+- Pass resources to NamespaceValidator [\#212](https://github.com/kubedb/elasticsearch/pull/212) ([tamalsaha](https://github.com/tamalsaha))
+- Various fixes [\#211](https://github.com/kubedb/elasticsearch/pull/211) ([tamalsaha](https://github.com/tamalsaha))
+- Support Livecycle hook and container probes [\#210](https://github.com/kubedb/elasticsearch/pull/210) ([tamalsaha](https://github.com/tamalsaha))
+- Check if Kubernetes version is supported before running operator [\#209](https://github.com/kubedb/elasticsearch/pull/209) ([tamalsaha](https://github.com/tamalsaha))
+- Update package alias [\#208](https://github.com/kubedb/elasticsearch/pull/208) ([tamalsaha](https://github.com/tamalsaha))
+
+## [0.9.0-beta.1](https://github.com/kubedb/elasticsearch/tree/0.9.0-beta.1) (2018-09-30)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0-beta.0...0.9.0-beta.1)
+
+**Merged pull requests:**
+
+- Revendor api [\#207](https://github.com/kubedb/elasticsearch/pull/207) ([tamalsaha](https://github.com/tamalsaha))
+- Use spec.authPlugin for Elasticsearch [\#206](https://github.com/kubedb/elasticsearch/pull/206) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor api for catalog apigroup [\#205](https://github.com/kubedb/elasticsearch/pull/205) ([tamalsaha](https://github.com/tamalsaha))
+- Use resources from podTemplate.spec.resources [\#204](https://github.com/kubedb/elasticsearch/pull/204) ([hossainemruz](https://github.com/hossainemruz))
+- Use --pull flag with docker build \(\#20\) [\#203](https://github.com/kubedb/elasticsearch/pull/203) ([tamalsaha](https://github.com/tamalsaha))
+
 ## [0.9.0-beta.0](https://github.com/kubedb/elasticsearch/tree/0.9.0-beta.0) (2018-09-20)
 [Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.8.0...0.9.0-beta.0)
 
