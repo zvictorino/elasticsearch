@@ -1,5 +1,37 @@
 # Change Log
 
+## [0.9.0](https://github.com/kubedb/elasticsearch/tree/0.9.0) (2018-12-17)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0-rc.2...0.9.0)
+
+**Merged pull requests:**
+
+- Reuse event recorder [\#237](https://github.com/kubedb/elasticsearch/pull/237) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor dependencies [\#236](https://github.com/kubedb/elasticsearch/pull/236) ([tamalsaha](https://github.com/tamalsaha))
+- Updated OSM binary in elasticsearch-tools [\#235](https://github.com/kubedb/elasticsearch/pull/235) ([the-redback](https://github.com/the-redback))
+- Fix misleading error log for invalid credentials while Snapshoting  [\#234](https://github.com/kubedb/elasticsearch/pull/234) ([hossainemruz](https://github.com/hossainemruz))
+- Test for faulty snapshot [\#233](https://github.com/kubedb/elasticsearch/pull/233) ([the-redback](https://github.com/the-redback))
+
+## [0.9.0-rc.2](https://github.com/kubedb/elasticsearch/tree/0.9.0-rc.2) (2018-12-06)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0-rc.1...0.9.0-rc.2)
+
+**Merged pull requests:**
+
+- Upgrade database secret keys [\#232](https://github.com/kubedb/elasticsearch/pull/232) ([the-redback](https://github.com/the-redback))
+- Ignore mutation of fields to default values during update [\#231](https://github.com/kubedb/elasticsearch/pull/231) ([tamalsaha](https://github.com/tamalsaha))
+- Use flags.DumnAll [\#230](https://github.com/kubedb/elasticsearch/pull/230) ([tamalsaha](https://github.com/tamalsaha))
+
+## [0.9.0-rc.1](https://github.com/kubedb/elasticsearch/tree/0.9.0-rc.1) (2018-12-02)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0-rc.0...0.9.0-rc.1)
+
+**Merged pull requests:**
+
+- Apply cleanup [\#229](https://github.com/kubedb/elasticsearch/pull/229) ([tamalsaha](https://github.com/tamalsaha))
+- Set periodic analytics [\#228](https://github.com/kubedb/elasticsearch/pull/228) ([tamalsaha](https://github.com/tamalsaha))
+-  Tests for AppBinding [\#227](https://github.com/kubedb/elasticsearch/pull/227) ([the-redback](https://github.com/the-redback))
+- Fix Analytics [\#226](https://github.com/kubedb/elasticsearch/pull/226) ([the-redback](https://github.com/the-redback))
+- Error out from cron job for deprecated dbversion [\#225](https://github.com/kubedb/elasticsearch/pull/225) ([the-redback](https://github.com/the-redback))
+- Add CRDS without observation when operator starts [\#224](https://github.com/kubedb/elasticsearch/pull/224) ([the-redback](https://github.com/the-redback))
+
 ## [0.9.0-rc.0](https://github.com/kubedb/elasticsearch/tree/0.9.0-rc.0) (2018-10-15)
 [Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0-beta.1...0.9.0-rc.0)
 
