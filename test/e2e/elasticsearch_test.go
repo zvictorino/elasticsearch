@@ -150,6 +150,13 @@ var _ = Describe("Elasticsearch", func() {
 		}
 	})
 
+	// if secret is empty (no .env file) then skip
+	JustBeforeEach(func() {
+		if secret != nil && len(secret.Data) == 0 && (snapshot != nil && snapshot.Spec.Local == nil) {
+			Skip("Missing repository credential")
+		}
+	})
+
 	Describe("Test", func() {
 
 		Context("General", func() {
@@ -835,6 +842,7 @@ var _ = Describe("Elasticsearch", func() {
 
 			BeforeEach(func() {
 				secret = f.SecretForLocalBackend()
+				snapshot = nil
 			})
 
 			Context("With Startup", func() {
@@ -892,7 +900,6 @@ var _ = Describe("Elasticsearch", func() {
 								},
 							},
 						}
-						snapshot.Spec.DatabaseName = elasticsearch.Name
 					})
 					It("should run schedular successfully", shouldStartupSchedular)
 
@@ -1403,7 +1410,7 @@ var _ = Describe("Elasticsearch", func() {
 
 			Context("Update Envs", func() {
 
-				It("should reject to update Envs", func() {
+				It("should not reject to update Envs", func() {
 					elasticsearch.Spec.PodTemplate.Spec.Env = allowedEnvList
 
 					shouldRunSuccessfully()
@@ -1418,7 +1425,7 @@ var _ = Describe("Elasticsearch", func() {
 						}
 						return in
 					})
-					Expect(err).To(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 		})
