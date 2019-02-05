@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/appscode/go/types"
 	core_util "github.com/appscode/kutil/core/v1"
 	exec_util "github.com/appscode/kutil/tools/exec"
 	catalog "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
@@ -678,6 +679,244 @@ var _ = Describe("Elasticsearch", func() {
 					})
 				})
 
+			})
+
+			Context("Snapshot PodVolume Template - In S3", func() {
+
+				BeforeEach(func() {
+					secret = f.SecretForS3Backend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.S3 = &store.S3Spec{
+						Bucket: os.Getenv(S3_BUCKET_NAME),
+					}
+				})
+
+				var shouldHandleJobVolumeSuccessfully = func() {
+					// Create and wait for running Elasticsearch
+					createAndWaitForRunning()
+
+					By("Get Elasticsearch")
+					es, err := f.GetElasticsearch(elasticsearch.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					elasticsearch.Spec = es.Spec
+
+					By("Create Secret")
+					err = f.CreateSecret(secret)
+					Expect(err).NotTo(HaveOccurred())
+
+					// determine pvcSpec and storageType for job
+					// start
+					pvcSpec := snapshot.Spec.PodVolumeClaimSpec
+					if pvcSpec == nil {
+						if elasticsearch.Spec.Topology != nil {
+							pvcSpec = elasticsearch.Spec.Topology.Data.Storage
+						} else {
+							pvcSpec = elasticsearch.Spec.Storage
+						}
+					}
+					st := snapshot.Spec.StorageType
+					if st == nil {
+						st = &elasticsearch.Spec.StorageType
+					}
+					Expect(st).NotTo(BeNil())
+					// end
+
+					By("Create Snapshot")
+					err = f.CreateSnapshot(snapshot)
+					if *st == api.StorageTypeDurable && pvcSpec == nil {
+						By("Create Snapshot should have failed")
+						Expect(err).Should(HaveOccurred())
+						return
+					} else {
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					By("Get Snapshot")
+					snap, err := f.GetSnapshot(snapshot.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					snapshot.Spec = snap.Spec
+
+					if *st == api.StorageTypeEphemeral {
+						storageSize := "0"
+						if pvcSpec != nil {
+							if sz, found := pvcSpec.Resources.Requests[core.ResourceStorage]; found {
+								storageSize = sz.String()
+							}
+						}
+						By(fmt.Sprintf("Check for Job Empty volume size: %v", storageSize))
+						f.EventuallyJobVolumeEmptyDirSize(snapshot.ObjectMeta).Should(Equal(storageSize))
+					} else if *st == api.StorageTypeDurable {
+						sz, found := pvcSpec.Resources.Requests[core.ResourceStorage]
+						Expect(found).NotTo(BeFalse())
+
+						By("Check for Job PVC Volume size from snapshot")
+						f.EventuallyJobPVCSize(snapshot.ObjectMeta).Should(Equal(sz.String()))
+					}
+
+					By("Check for succeeded snapshot")
+					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
+
+					if !skipSnapshotDataChecking {
+						By("Check for snapshot data")
+						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+					}
+				}
+
+				// db StorageType Scenarios
+				// ==============> Start
+				var dbStorageTypeScenarios = func() {
+					Context("DBStorageType - Durable", func() {
+						BeforeEach(func() {
+							elasticsearch.Spec.StorageType = api.StorageTypeDurable
+							storage := core.PersistentVolumeClaimSpec{
+								Resources: core.ResourceRequirements{
+									Requests: core.ResourceList{
+										core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
+									},
+								},
+								StorageClassName: types.StringP(root.StorageClass),
+							}
+							if elasticsearch.Spec.Topology != nil {
+								elasticsearch.Spec.Topology.Client.Storage = &storage
+								elasticsearch.Spec.Topology.Data.Storage = &storage
+								elasticsearch.Spec.Topology.Master.Storage = &storage
+							} else {
+								elasticsearch.Spec.Storage = &storage
+							}
+						})
+
+						It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
+					})
+
+					Context("DBStorageType - Ephemeral", func() {
+						BeforeEach(func() {
+							elasticsearch.Spec.StorageType = api.StorageTypeEphemeral
+							elasticsearch.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+						})
+
+						Context("DBPvcSpec is nil", func() {
+							BeforeEach(func() {
+								elasticsearch.Spec.Storage = nil
+								if elasticsearch.Spec.Topology != nil {
+									elasticsearch.Spec.Topology.Client.Storage = nil
+									elasticsearch.Spec.Topology.Data.Storage = nil
+									elasticsearch.Spec.Topology.Master.Storage = nil
+								} else {
+									elasticsearch.Spec.Storage = nil
+								}
+							})
+
+							It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
+						})
+
+						Context("DBPvcSpec is given [not nil]", func() {
+							BeforeEach(func() {
+								storage := core.PersistentVolumeClaimSpec{
+									Resources: core.ResourceRequirements{
+										Requests: core.ResourceList{
+											core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
+										},
+									},
+									StorageClassName: types.StringP(root.StorageClass),
+								}
+								if elasticsearch.Spec.Topology != nil {
+									elasticsearch.Spec.Topology.Client.Storage = &storage
+									elasticsearch.Spec.Topology.Data.Storage = &storage
+									elasticsearch.Spec.Topology.Master.Storage = &storage
+								} else {
+									elasticsearch.Spec.Storage = &storage
+								}
+							})
+
+							It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
+						})
+					})
+				}
+				// End <==============
+
+				// Snapshot PVC Scenarios
+				// ==============> Start
+				var snapshotPvcScenarios = func() {
+					Context("Snapshot PVC is given [not nil]", func() {
+						BeforeEach(func() {
+							snapshot.Spec.PodVolumeClaimSpec = &core.PersistentVolumeClaimSpec{
+								Resources: core.ResourceRequirements{
+									Requests: core.ResourceList{
+										core.ResourceStorage: resource.MustParse(framework.JobPvcStorageSize),
+									},
+								},
+								StorageClassName: types.StringP(root.StorageClass),
+							}
+						})
+
+						dbStorageTypeScenarios()
+					})
+
+					Context("Snapshot PVC is nil", func() {
+						BeforeEach(func() {
+							snapshot.Spec.PodVolumeClaimSpec = nil
+						})
+
+						dbStorageTypeScenarios()
+					})
+				}
+				// End <==============
+
+				Context("Snapshot StorageType is nil", func() {
+					BeforeEach(func() {
+						snapshot.Spec.StorageType = nil
+					})
+
+					Context("-", func() {
+						snapshotPvcScenarios()
+					})
+
+					Context("with Dedicated elasticsearch", func() {
+						BeforeEach(func() {
+							elasticsearch = f.DedicatedElasticsearch()
+							snapshot.Spec.DatabaseName = elasticsearch.Name
+						})
+						snapshotPvcScenarios()
+					})
+				})
+
+				Context("Snapshot StorageType is Ephemeral", func() {
+					BeforeEach(func() {
+						ephemeral := api.StorageTypeEphemeral
+						snapshot.Spec.StorageType = &ephemeral
+					})
+
+					Context("-", func() {
+						snapshotPvcScenarios()
+					})
+
+					Context("with Dedicated elasticsearch", func() {
+						BeforeEach(func() {
+							elasticsearch = f.DedicatedElasticsearch()
+							snapshot.Spec.DatabaseName = elasticsearch.Name
+						})
+						snapshotPvcScenarios()
+					})
+				})
+
+				Context("Snapshot StorageType is Durable", func() {
+					BeforeEach(func() {
+						durable := api.StorageTypeDurable
+						snapshot.Spec.StorageType = &durable
+					})
+
+					Context("-", func() {
+						snapshotPvcScenarios()
+					})
+
+					Context("with Dedicated elasticsearch", func() {
+						BeforeEach(func() {
+							elasticsearch = f.DedicatedElasticsearch()
+							snapshot.Spec.DatabaseName = elasticsearch.Name
+						})
+						snapshotPvcScenarios()
+					})
+				})
 			})
 		})
 
@@ -1405,7 +1644,7 @@ var _ = Describe("Elasticsearch", func() {
 					pod, err := f.KubeClient().CoreV1().Pods(elasticsearch.Namespace).Get(podName, metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
 
-					out, err := exec_util.ExecIntoPod(f.RestConfig(), pod, "env")
+					out, err := exec_util.ExecIntoPod(f.RestConfig(), pod, exec_util.Command("env"))
 					Expect(err).NotTo(HaveOccurred())
 					for _, env := range allowedEnvList {
 						Expect(out).Should(ContainSubstring(env.Name + "=" + env.Value))
