@@ -1,5 +1,23 @@
 # Change Log
 
+## [0.10.0](https://github.com/kubedb/elasticsearch/tree/0.10.0) (2019-02-19)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0...0.10.0)
+
+**Merged pull requests:**
+
+- Revendor dependencies [\#249](https://github.com/kubedb/elasticsearch/pull/249) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor dependencies : Retry Failed Scheduler Snapshot [\#248](https://github.com/kubedb/elasticsearch/pull/248) ([the-redback](https://github.com/the-redback))
+- Added ephemeral StorageType support  [\#247](https://github.com/kubedb/elasticsearch/pull/247) ([the-redback](https://github.com/the-redback))
+- Add missing privileges for ES snapshot [\#246](https://github.com/kubedb/elasticsearch/pull/246) ([maartenvandenbogaard](https://github.com/maartenvandenbogaard))
+- Initial RBAC support: create and use Kubernetes service account for E… [\#245](https://github.com/kubedb/elasticsearch/pull/245) ([maartenvandenbogaard](https://github.com/maartenvandenbogaard))
+- Use PVC spec from snapshot if provided [\#244](https://github.com/kubedb/elasticsearch/pull/244) ([tamalsaha](https://github.com/tamalsaha))
+- Revendored and updated tests for 'Prevent prefix matching of multiple snapshots' [\#243](https://github.com/kubedb/elasticsearch/pull/243) ([the-redback](https://github.com/the-redback))
+- Add certificate health checker [\#242](https://github.com/kubedb/elasticsearch/pull/242) ([tamalsaha](https://github.com/tamalsaha))
+- Use go `jks` converter instead of keytool [\#241](https://github.com/kubedb/elasticsearch/pull/241) ([hossainemruz](https://github.com/hossainemruz))
+- Add cabundle to Elasticsearch app binding [\#240](https://github.com/kubedb/elasticsearch/pull/240) ([tamalsaha](https://github.com/tamalsaha))
+- Fix app binding [\#239](https://github.com/kubedb/elasticsearch/pull/239) ([tamalsaha](https://github.com/tamalsaha))
+- Support Elasticsearch 6.5.3 [\#238](https://github.com/kubedb/elasticsearch/pull/238) ([hossainemruz](https://github.com/hossainemruz))
+
 ## [0.9.0](https://github.com/kubedb/elasticsearch/tree/0.9.0) (2018-12-17)
 [Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0-rc.2...0.9.0)
 
