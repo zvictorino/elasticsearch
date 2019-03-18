@@ -1,5 +1,17 @@
 # Change Log
 
+## [0.11.0](https://github.com/kubedb/elasticsearch/tree/0.11.0) (2019-03-18)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.10.0...0.11.0)
+
+**Merged pull requests:**
+
+- Init container and DB psp in e2e test framework [\#256](https://github.com/kubedb/elasticsearch/pull/256) ([iamrz1](https://github.com/iamrz1))
+- Don't inherit app.kubernetes.io labels from CRD into offshoots [\#255](https://github.com/kubedb/elasticsearch/pull/255) ([tamalsaha](https://github.com/tamalsaha))
+- Support for init container [\#254](https://github.com/kubedb/elasticsearch/pull/254) ([iamrz1](https://github.com/iamrz1))
+- Apply role labels to stats service [\#252](https://github.com/kubedb/elasticsearch/pull/252) ([tamalsaha](https://github.com/tamalsaha))
+- Support for Pod Security Policy [\#251](https://github.com/kubedb/elasticsearch/pull/251) ([iamrz1](https://github.com/iamrz1))
+- Update Kubernetes client libraries to 1.13.0 release [\#250](https://github.com/kubedb/elasticsearch/pull/250) ([tamalsaha](https://github.com/tamalsaha))
+
 ## [0.10.0](https://github.com/kubedb/elasticsearch/tree/0.10.0) (2019-02-19)
 [Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.9.0...0.10.0)
 
