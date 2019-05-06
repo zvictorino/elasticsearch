@@ -1,5 +1,14 @@
 # Change Log
 
+## [0.12.0](https://github.com/kubedb/elasticsearch/tree/0.12.0) (2019-05-06)
+[Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.11.0...0.12.0)
+
+**Merged pull requests:**
+
+- Revendor dependencies [\#259](https://github.com/kubedb/elasticsearch/pull/259) ([tamalsaha](https://github.com/tamalsaha))
+- Fix PSP in Role for kubeDB upgrade [\#258](https://github.com/kubedb/elasticsearch/pull/258) ([iamrz1](https://github.com/iamrz1))
+- Modify mutator validator names [\#257](https://github.com/kubedb/elasticsearch/pull/257) ([iamrz1](https://github.com/iamrz1))
+
 ## [0.11.0](https://github.com/kubedb/elasticsearch/tree/0.11.0) (2019-03-18)
 [Full Changelog](https://github.com/kubedb/elasticsearch/compare/0.10.0...0.11.0)
 
