@@ -147,20 +147,27 @@ func ValidateElasticsearch(client kubernetes.Interface, extClient cs.Interface, 
 		return err
 	}
 
-	if elasticsearch.Spec.StorageType == "" {
+	topology := elasticsearch.Spec.Topology
+
+	if topology == nil && elasticsearch.Spec.StorageType == "" {
 		return fmt.Errorf(`'spec.storageType' is missing`)
 	}
-	if elasticsearch.Spec.StorageType != api.StorageTypeDurable && elasticsearch.Spec.StorageType != api.StorageTypeEphemeral {
-		return fmt.Errorf(`'spec.storageType' %s is invalid`, elasticsearch.Spec.StorageType)
+
+	if elasticsearch.Spec.StorageType != "" {
+		if elasticsearch.Spec.StorageType != api.StorageTypeDurable && elasticsearch.Spec.StorageType != api.StorageTypeEphemeral {
+			return fmt.Errorf(`'spec.storageType' %s is invalid`, elasticsearch.Spec.StorageType)
+		}
 	}
 
-	topology := elasticsearch.Spec.Topology
 	if topology != nil {
 		if elasticsearch.Spec.Replicas != nil {
 			return errors.New("doesn't support spec.replicas when spec.topology is set")
 		}
 		if elasticsearch.Spec.Storage != nil {
 			return errors.New("doesn't support spec.storage when spec.topology is set")
+		}
+		if elasticsearch.Spec.StorageType != "" {
+			return errors.New("doesn't support spec.storageType when spec.topology is set")
 		}
 		if elasticsearch.Spec.PodTemplate.Spec.Resources.Size() != 0 {
 			return errors.New("doesn't support spec.resources when spec.topology is set")
@@ -170,30 +177,38 @@ func ValidateElasticsearch(client kubernetes.Interface, extClient cs.Interface, 
 			return errors.New("client & master node should not have same prefix")
 		}
 		if topology.Client.Prefix == topology.Data.Prefix {
-			return errors.New("client & data node should not have same prefix")
+			return errors.New("client & hot node should not have same prefix")
+		}
+		if topology.Client.Prefix == topology.Warm.Prefix {
+			return errors.New("client & warm node should not have same prefix")
 		}
 		if topology.Master.Prefix == topology.Data.Prefix {
-			return errors.New("master & data node should not have same prefix")
+			return errors.New("master & hot node should not have same prefix")
 		}
-
+		if topology.Master.Prefix == topology.Warm.Prefix {
+			return errors.New("master & warm node should not have same prefix")
+		}
+		if topology.Warm.Prefix == topology.Data.Prefix {
+			return errors.New("warm & hot node should not have same prefix")
+		}
 		if topology.Client.Replicas == nil || *topology.Client.Replicas < 1 {
 			return fmt.Errorf(`topology.client.replicas "%v" invalid. Must be greater than zero`, topology.Client.Replicas)
 		}
-		if err := amv.ValidateStorage(client, elasticsearch.Spec.StorageType, topology.Client.Storage); err != nil {
+		if err := amv.ValidateStorage(client, topology.Client.StorageType, topology.Client.Storage); err != nil {
 			return err
 		}
 
 		if topology.Master.Replicas == nil || *topology.Master.Replicas < 1 {
 			return fmt.Errorf(`topology.master.replicas "%v" invalid. Must be greater than zero`, topology.Master.Replicas)
 		}
-		if err := amv.ValidateStorage(client, elasticsearch.Spec.StorageType, topology.Master.Storage); err != nil {
+		if err := amv.ValidateStorage(client, topology.Master.StorageType, topology.Master.Storage); err != nil {
 			return err
 		}
 
 		if topology.Data.Replicas == nil || *topology.Data.Replicas < 1 {
 			return fmt.Errorf(`topology.data.replicas "%v" invalid. Must be greater than zero`, topology.Data.Replicas)
 		}
-		if err := amv.ValidateStorage(client, elasticsearch.Spec.StorageType, topology.Data.Storage); err != nil {
+		if err := amv.ValidateStorage(client, topology.Data.StorageType, topology.Data.Storage); err != nil {
 			return err
 		}
 	} else {

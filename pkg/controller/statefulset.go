@@ -29,12 +29,14 @@ const (
 
 func (c *Controller) ensureStatefulSet(
 	elasticsearch *api.Elasticsearch,
+	storageType api.StorageType,
 	pvcSpec *core.PersistentVolumeClaimSpec,
 	resources core.ResourceRequirements,
 	statefulSetName string,
 	labels map[string]string,
 	replicas int32,
 	envList []core.EnvVar,
+	nodeSelector map[string]string,
 	isClient bool,
 	maxUnavailable *intstr.IntOrString,
 ) (kutil.VerbType, error) {
@@ -58,7 +60,7 @@ func (c *Controller) ensureStatefulSet(
 		return kutil.VerbUnchanged, rerr
 	}
 
-	searchGuard := string(elasticsearchVersion.Spec.Version[0])
+	//searchGuard := string(elasticsearchVersion.Spec.Version[0])
 
 	statefulSet, vt, err := app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
 		in.Labels = core_util.UpsertMap(labels, elasticsearch.OffshootLabels())
@@ -113,7 +115,7 @@ func (c *Controller) ensureStatefulSet(
 		in = upsertPort(in, isClient)
 		in = upsertCustomConfig(in, elasticsearch)
 
-		in.Spec.Template.Spec.NodeSelector = elasticsearch.Spec.PodTemplate.Spec.NodeSelector
+		in.Spec.Template.Spec.NodeSelector = nodeSelector
 		in.Spec.Template.Spec.Affinity = elasticsearch.Spec.PodTemplate.Spec.Affinity
 		if elasticsearch.Spec.PodTemplate.Spec.SchedulerName != "" {
 			in.Spec.Template.Spec.SchedulerName = elasticsearch.Spec.PodTemplate.Spec.SchedulerName
@@ -126,11 +128,12 @@ func (c *Controller) ensureStatefulSet(
 
 		if isClient {
 			in = c.upsertMonitoringContainer(in, elasticsearch, elasticsearchVersion)
-			in = upsertDatabaseSecret(in, elasticsearch.Spec.DatabaseSecret.SecretName, searchGuard)
+			//in = upsertDatabaseSecret(in, elasticsearch.Spec.DatabaseSecret.SecretName, searchGuard)
 		}
 
 		in = upsertCertificate(in, elasticsearch.Spec.CertificateSecret.SecretName, isClient, elasticsearch.Spec.EnableSSL)
-		in = upsertDataVolume(in, elasticsearch.Spec.StorageType, pvcSpec)
+		//in = upsertDataVolume(in, elasticsearch.Spec.StorageType, pvcSpec)
+		in = upsertDataVolume(in, storageType, pvcSpec)
 		in = upsertTemporaryVolume(in)
 
 		if c.EnableRBAC {
@@ -185,7 +188,7 @@ func (c *Controller) CheckStatefulSetPodStatus(statefulSet *apps.StatefulSet) er
 
 func getHeapSizeForNode(val int64) int64 {
 	ret := val / 100
-	return ret * 80
+	return ret * 50
 }
 
 func (c *Controller) ensureClientNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
@@ -229,7 +232,11 @@ func (c *Controller) ensureClientNode(elasticsearch *api.Elasticsearch) (kutil.V
 	}
 	maxUnavailable := elasticsearch.Spec.Topology.Client.MaxUnavailable
 
+<<<<<<< HEAD
+	return c.ensureStatefulSet(elasticsearch, clientNode.StorageType, clientNode.Storage, clientNode.Resources, statefulSetName, labels, replicas, envList, clientNode.NodeSelector, true)
+=======
 	return c.ensureStatefulSet(elasticsearch, clientNode.Storage, clientNode.Resources, statefulSetName, labels, replicas, envList, true, maxUnavailable)
+>>>>>>> 3dd46b3f441eeb582c0b34a80cfca5afc161975f
 }
 
 func (c *Controller) ensureMasterNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
@@ -264,7 +271,7 @@ func (c *Controller) ensureMasterNode(elasticsearch *api.Elasticsearch) (kutil.V
 		},
 		{
 			Name:  "HTTP_ENABLE",
-			Value: fmt.Sprintf("%v", false),
+			Value: fmt.Sprintf("%v", true),
 		},
 		{
 			Name:  "NUMBER_OF_MASTERS",
@@ -276,11 +283,16 @@ func (c *Controller) ensureMasterNode(elasticsearch *api.Elasticsearch) (kutil.V
 		},
 	}
 
+<<<<<<< HEAD
+	return c.ensureStatefulSet(elasticsearch, masterNode.StorageType, masterNode.Storage, masterNode.Resources, statefulSetName, labels, replicas, envList, masterNode.NodeSelector, false)
+=======
 	maxUnavailable := elasticsearch.Spec.Topology.Master.MaxUnavailable
 
 	return c.ensureStatefulSet(elasticsearch, masterNode.Storage, masterNode.Resources, statefulSetName, labels, replicas, envList, false, maxUnavailable)
+>>>>>>> 3dd46b3f441eeb582c0b34a80cfca5afc161975f
 }
 
+//Hot DataNode
 func (c *Controller) ensureDataNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
 	statefulSetName := elasticsearch.OffshootName()
 	dataNode := elasticsearch.Spec.Topology.Data
@@ -308,11 +320,15 @@ func (c *Controller) ensureDataNode(elasticsearch *api.Elasticsearch) (kutil.Ver
 		},
 		{
 			Name:  "HTTP_ENABLE",
-			Value: fmt.Sprintf("%v", false),
+			Value: fmt.Sprintf("%v", true),
 		},
 		{
 			Name:  "ES_JAVA_OPTS",
 			Value: fmt.Sprintf("-Xms%v -Xmx%v", heapSize, heapSize),
+		},
+		{
+			Name:  "NODE_TAG",
+			Value: fmt.Sprintf("%s", "hot"),
 		},
 	}
 
@@ -321,9 +337,61 @@ func (c *Controller) ensureDataNode(elasticsearch *api.Elasticsearch) (kutil.Ver
 		replicas = types.Int32(dataNode.Replicas)
 	}
 
+	return c.ensureStatefulSet(elasticsearch, dataNode.StorageType, dataNode.Storage, dataNode.Resources, statefulSetName, labels, replicas, envList, dataNode.NodeSelector, false)
+}
+
+// Warm DataNode
+func (c *Controller) ensureWarmNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
+	statefulSetName := elasticsearch.OffshootName()
+	dataNode := elasticsearch.Spec.Topology.Warm
+
+	if dataNode.Prefix != "" {
+		statefulSetName = fmt.Sprintf("%v-%v", dataNode.Prefix, statefulSetName)
+	}
+
+	labels := elasticsearch.OffshootLabels()
+	labels[NodeRoleData] = "set"
+
+	heapSize := int64(134217728) // 128mb
+	if request, found := dataNode.Resources.Requests[core.ResourceMemory]; found && request.Value() > 0 {
+		heapSize = getHeapSizeForNode(request.Value())
+	}
+
+	envList := []core.EnvVar{
+		{
+			Name:  "NODE_MASTER",
+			Value: fmt.Sprintf("%v", false),
+		},
+		{
+			Name:  "NODE_INGEST",
+			Value: fmt.Sprintf("%v", false),
+		},
+		{
+			Name:  "HTTP_ENABLE",
+			Value: fmt.Sprintf("%v", true),
+		},
+		{
+			Name:  "ES_JAVA_OPTS",
+			Value: fmt.Sprintf("-Xms%v -Xmx%v", heapSize, heapSize),
+		},
+		{
+			Name:  "NODE_TAG",
+			Value: fmt.Sprintf("%s", "warm"),
+		},
+	}
+
+	replicas := int32(1)
+	if dataNode.Replicas != nil {
+		replicas = types.Int32(dataNode.Replicas)
+	}
+
+<<<<<<< HEAD
+	return c.ensureStatefulSet(elasticsearch, dataNode.StorageType, dataNode.Storage, dataNode.Resources, statefulSetName, labels, replicas, envList, dataNode.NodeSelector, false)
+=======
 	maxUnavailable := elasticsearch.Spec.Topology.Data.MaxUnavailable
 
 	return c.ensureStatefulSet(elasticsearch, dataNode.Storage, dataNode.Resources, statefulSetName, labels, replicas, envList, false, maxUnavailable)
+>>>>>>> 3dd46b3f441eeb582c0b34a80cfca5afc161975f
 }
 
 func (c *Controller) ensureCombinedNode(elasticsearch *api.Elasticsearch) (kutil.VerbType, error) {
@@ -368,10 +436,15 @@ func (c *Controller) ensureCombinedNode(elasticsearch *api.Elasticsearch) (kutil
 	if elasticsearch.Spec.PodTemplate.Spec.Resources.Size() != 0 {
 		resources = elasticsearch.Spec.PodTemplate.Spec.Resources
 	}
+<<<<<<< HEAD
+	nodeSelector := elasticsearch.Spec.PodTemplate.Spec.NodeSelector
+	return c.ensureStatefulSet(elasticsearch, elasticsearch.Spec.StorageType, &pvcSpec, resources, statefulSetName, labels, replicas, envList, nodeSelector, true)
+=======
 
 	maxUnavailable := elasticsearch.Spec.MaxUnavailable
 
 	return c.ensureStatefulSet(elasticsearch, &pvcSpec, resources, statefulSetName, labels, replicas, envList, true, maxUnavailable)
+>>>>>>> 3dd46b3f441eeb582c0b34a80cfca5afc161975f
 }
 
 func (c *Controller) checkStatefulSet(elasticsearch *api.Elasticsearch, name string) error {

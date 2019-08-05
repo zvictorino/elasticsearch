@@ -202,24 +202,38 @@ func (c *Controller) ensureElasticsearchNode(elasticsearch *api.Elasticsearch) (
 	vt := kutil.VerbUnchanged
 	topology := elasticsearch.Spec.Topology
 	if topology != nil {
-		vt1, err := c.ensureClientNode(elasticsearch)
+
+		vt1, err := c.ensureMasterNode(elasticsearch)
 		if err != nil {
 			return kutil.VerbUnchanged, err
 		}
-		vt2, err := c.ensureMasterNode(elasticsearch)
+		vt2, err := c.ensureDataNode(elasticsearch)
 		if err != nil {
 			return kutil.VerbUnchanged, err
 		}
-		vt3, err := c.ensureDataNode(elasticsearch)
+		vt3, err := c.ensureClientNode(elasticsearch)
 		if err != nil {
 			return kutil.VerbUnchanged, err
+		}
+		replicas := topology.Warm.Replicas
+		if replicas != nil {
+			vt4, err := c.ensureWarmNode(elasticsearch)
+			if err != nil {
+				return kutil.VerbUnchanged, err
+			}
+			if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated && vt3 == kutil.VerbCreated && vt4 == kutil.VerbCreated {
+				vt = kutil.VerbCreated
+			} else if vt1 == kutil.VerbPatched || vt2 == kutil.VerbPatched || vt3 == kutil.VerbPatched || vt4 == kutil.VerbPatched {
+				vt = kutil.VerbPatched
+			}
+		} else {
+			if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated && vt3 == kutil.VerbCreated {
+				vt = kutil.VerbCreated
+			} else if vt1 == kutil.VerbPatched || vt2 == kutil.VerbPatched || vt3 == kutil.VerbPatched {
+				vt = kutil.VerbPatched
+			}
 		}
 
-		if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated && vt3 == kutil.VerbCreated {
-			vt = kutil.VerbCreated
-		} else if vt1 == kutil.VerbPatched || vt2 == kutil.VerbPatched || vt3 == kutil.VerbPatched {
-			vt = kutil.VerbPatched
-		}
 	} else {
 		vt, err = c.ensureCombinedNode(elasticsearch)
 		if err != nil {

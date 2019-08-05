@@ -114,6 +114,10 @@ func setDefaultValues(client kubernetes.Interface, extClient cs.Interface, elast
 		if topology.Data.Replicas == nil {
 			topology.Data.Replicas = types.Int32P(1)
 		}
+
+		if topology.Data.Replicas == nil {
+			topology.Warm.Replicas = types.Int32P(1)
+		}
 	} else {
 		if elasticsearch.Spec.Replicas == nil {
 			elasticsearch.Spec.Replicas = types.Int32P(1)
